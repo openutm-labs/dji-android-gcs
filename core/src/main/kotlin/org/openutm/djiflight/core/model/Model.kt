@@ -62,4 +62,10 @@ data class FlightPlan(
     val surveyArea: List<LatLng>? = null,
     /** The pilot signed in through the lab's identity server when planning; null = picked from the roster only. */
     val pilotSignIn: PilotSignIn? = null,
-)
+) {
+    /**
+     * Most height above take-off the legal limit allows anywhere on the flight. The limit counts from
+     * the ground, which a terrain-following mission climbs with ([MissionPlan.groundRiseM]).
+     */
+    val legalCeilingM: Double get() = legalMaxHeightM + (mission?.groundRiseM ?: 0.0)
+}

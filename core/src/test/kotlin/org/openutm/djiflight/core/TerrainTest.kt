@@ -7,6 +7,8 @@ import org.openutm.djiflight.core.geo.LatLng
 import org.openutm.djiflight.core.geo.LocalPlane
 import org.openutm.djiflight.core.geo.XY
 import org.openutm.djiflight.core.mission.CameraModel
+import org.openutm.djiflight.core.mission.MissionLimits
+import org.openutm.djiflight.core.mission.MissionValidator
 import org.openutm.djiflight.core.mission.MissionWaypoint
 import org.openutm.djiflight.core.mission.SurveyPlanner
 import org.openutm.djiflight.core.mission.SurveySpec
@@ -14,6 +16,7 @@ import org.openutm.djiflight.core.terrain.ByteSource
 import org.openutm.djiflight.core.terrain.PmTiles
 import org.openutm.djiflight.core.terrain.Raster
 import org.openutm.djiflight.core.terrain.TerrainCheck
+import org.openutm.djiflight.core.terrain.TerrainFollow
 import org.openutm.djiflight.core.terrain.TerrainModel
 import org.openutm.djiflight.core.terrain.TerrariumTerrain
 import org.openutm.djiflight.core.terrain.TileDecoder
@@ -135,6 +138,24 @@ class TerrainTest {
         val down = TerrainCheck.area(t, plane.toLatLng(XY(600.0, 0.0)), square, 100.0)!!
         assertEquals(-60.0, down.lowestM, 2.0)
         assertTrue(TerrainCheck.advisories(down, 120.0).any { it.code == "TERRAIN_ABOVE_LEGAL" })
+    }
+
+    @Test
+    fun `following the terrain file keeps the same survey 80 m above the hillside`() {
+        val t = hillside()
+        val plane = LocalPlane(LatLng(-1.28, 36.82))
+        val takeoff = plane.toLatLng(XY(0.0, 0.0))
+        val square = listOf(XY(0.0, 0.0), XY(600.0, 0.0), XY(600.0, 300.0), XY(0.0, 300.0)).map(plane::toLatLng)
+        val flat = SurveyPlanner.plan(SurveySpec(square, CameraModel.MAVIC_3E, 80.0, 0.75, 0.65, headingDeg = 90.0, speedMps = 8.0)).plan
+        val r = assertNotNull(TerrainFollow.follow(flat, takeoff, 80.0, t, MissionLimits.WAYPOINT_V1))
+        // An even slope in the tiles: the line ends move, nothing is added.
+        assertEquals(flat.waypoints.size, r.waypoints.size)
+        assertEquals(140.0, r.maxHeightM, 2.0)
+        val rep = assertNotNull(TerrainCheck.route(t, takeoff, r.waypoints))
+        assertEquals(80.0, rep.minClearanceM!!, 2.0)
+        assertEquals(80.0, rep.maxAboveGroundM, 2.0)
+        assertEquals(emptyList(), TerrainCheck.advisories(rep, 120.0))
+        assertEquals(emptyList(), MissionValidator.validate(r, MissionLimits.WAYPOINT_V1, 120.0))
     }
 
     @Test

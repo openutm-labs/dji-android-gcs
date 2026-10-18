@@ -533,14 +533,16 @@ class PreflightPanel(private val activity: Activity, private val graph: AppGraph
             obstacleToggle?.set(activity.getString(if (s.obstacleAvoidance == true) R.string.preflight_on else R.string.preflight_off), null, if (s.obstacleAvoidance == true) Kind.PRIMARY else Kind.SECONDARY)
             rcButtons.forEach { (act, b) -> b.kind = if (s.rcLostAction == act) Kind.PRIMARY else Kind.SECONDARY }
             hints[SetupItem.RETURN_HOME_HEIGHT]?.let { h ->
-                val ceiling = plan?.let { min(it.plannedMaxHeightM, it.legalMaxHeightM) }
+                val ceiling = plan?.let { min(it.plannedMaxHeightM, it.legalCeilingM) }
                 val rth = s.returnHomeHeightM
                 h.setIfChanged(if (ceiling == null) activity.getString(R.string.preflight_rth_hint_no_plan) else activity.getString(R.string.preflight_rth_hint_ceiling, ceiling))
                 h.setTextColor(activity.color(if (ceiling != null && rth != null && rth > ceiling + 0.5) R.color.warn else R.color.text3))
             }
             hints[SetupItem.MAX_ALTITUDE]?.let { h ->
-                val legal = plan?.legalMaxHeightM ?: graph.provisioning.value?.legalMaxHeightM ?: 120.0
-                h.setTextColor(activity.color(if ((s.maxAltitudeM ?: 0) > legal + 0.5) R.color.warn else R.color.text3))
+                // Over terrain the route follows, the legal limit (from the ground) allows more above take-off.
+                val legal = plan?.legalCeilingM ?: graph.provisioning.value?.legalMaxHeightM ?: 120.0
+                val top = plan?.mission?.maxHeightM
+                h.setTextColor(activity.color(if ((s.maxAltitudeM ?: 0) > legal + 0.5 || (top != null && (s.maxAltitudeM ?: Int.MAX_VALUE) < top - 0.5)) R.color.warn else R.color.text3))
             }
             if (s.rcLostAction != null && plan?.mission != null && s.rcLostAction != RcLostAction.RETURN_HOME) {
                 settingsNote.setIfChanged(activity.getString(R.string.preflight_missions_expect_rth))

@@ -110,7 +110,7 @@ class SyncEngine(
                     DeclarationInput(
                         clientRef = plan.flightId, ring = plan.area, ground = plan.ground,
                         plannedMaxHeightM = plan.plannedMaxHeightM, legalMaxHeightM = plan.legalMaxHeightM,
-                        missionMaxHeightM = plan.missionMaxHeightM, plannedStartMs = plan.plannedStartMs,
+                        missionMaxHeightM = plan.missionMaxHeightM, groundRiseM = plan.mission?.groundRiseM ?: 0.0, plannedStartMs = plan.plannedStartMs,
                         plannedEndMs = plan.plannedEndMs, nowMs = now, syncGraceMs = config.syncGraceMs, minLeadMs = config.declareLeadMs,
                         aircraftSerial = plan.aircraftSerial, originatingParty = plan.lab, submittedBy = "${plan.operatorId}/${plan.pilotId}",
                     ),

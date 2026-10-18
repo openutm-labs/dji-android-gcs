@@ -54,6 +54,12 @@
     <!-- Overlap front / side, speed, flight direction, gimbal angle, travel altitude (a value or plan_travel_off_lower) -->
     <string name="plan_advanced_summary">Overlap %1$.0f / %2$.0f %% · %3$.0f m/s · %4$.0f° · gimbal %5$.0f° · travel %6$s</string>
     <string name="plan_travel_off_lower">off</string>
+    <string name="plan_follow_terrain">Follow terrain</string>
+    <string name="plan_follow_terrain_hint">Keep the altitude above the ground, not above take-off (terrain file)</string>
+    <string name="plan_follow_on">On</string>
+    <string name="plan_follow_off">Off</string>
+    <!-- The Advanced summary (plan_advanced_summary) when the survey follows the terrain -->
+    <string name="plan_advanced_summary_terrain">%1$s · follows terrain</string>
     <string name="plan_gsd">GSD %1$.1f cm/px</string>
     <string name="plan_gsd_perimeter">GSD %1$.1f cm/px · round the edge</string>
     <!-- English keeps "lines" for one line too, as before. -->
@@ -160,6 +166,14 @@
     <string name="plan_terrain_ground_route">Ground under the route: %1$s to %2$s m from take-off (terrain model)</string>
     <string name="plan_terrain_ground_area">Ground in the area: %1$s to %2$s m from take-off (terrain model)</string>
     <string name="plan_terrain_clearance">Lowest clearance %1$.0f m above it</string>
+    <!-- Height above the ground, waypoints added where the ground changes -->
+    <plurals name="plan_terrain_follow">
+        <item quantity="one">Follows the terrain %1$.0f m above it: %2$d waypoint added</item>
+        <item quantity="other">Follows the terrain %1$.0f m above it: %2$d waypoints added</item>
+    </plurals>
+    <!-- Lowest and highest waypoint above take-off -->
+    <string name="plan_terrain_follow_heights">Waypoints %1$.0f to %2$.0f m above take-off (the legal limit counts from the ground): take off where planned</string>
+    <string name="plan_terrain_follow_failed">Can\'t follow the terrain: the terrain file has no heights at the take-off point or somewhere on the route</string>
     <string name="plan_terrain_gnss_msl">This controller\'s GNSS seems to give height above sea level, not the ellipsoid (%1$.0f m apart here): enter the site\'s elevation</string>
     <string name="plan_terrain_check_lower">Check the ground height: the terrain model puts it %1$.0f m lower</string>
     <string name="plan_terrain_check_higher">Check the ground height: the terrain model puts it %1$.0f m higher</string>

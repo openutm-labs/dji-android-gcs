@@ -51,7 +51,8 @@ data class WpmlTarget(
  * own `WPMZManager.checkValidation` on each file before upload.
  *
  * Mapping (matching what the v4 Waypoint 1.0 mapper does):
- * - heights relative to the take-off point; straight segments, stop at each waypoint;
+ * - heights relative to the take-off point, terrain-following plans too ([org.openutm.djiflight.core.terrain.TerrainFollow]
+ *   writes them; DJI's `realTimeFollowSurface` is only on some aircraft); straight segments, stop at each waypoint;
  * - the gimbal is set to [MissionPlan.gimbalPitchDeg] on reaching the first waypoint;
  * - [MissionPlan.photoDistanceIntervalM] → one `takePhoto` group with a `multipleDistance`
  *   trigger over the whole route; [MissionWaypoint.takePhoto] → `takePhoto` on reaching it;
@@ -173,7 +174,8 @@ object WpmlWriter {
         line(3, "<wpml:executeRCLostAction>goBack</wpml:executeRCLostAction>")
         line(3, "<wpml:takeOffSecurityHeight>${num(securityHeight)}</wpml:takeOffSecurityHeight>")
         line(3, "<wpml:globalTransitionalSpeed>${num(min(plan.autoSpeedMps, 15.0))}</wpml:globalTransitionalSpeed>")
-        // Return-to-home climbs to this height: keep it inside the declared volume (the mission's top).
+        // Return-to-home climbs to this height: keep it inside the declared volume (the mission's top;
+        // over terrain, the whole route's top in every part: MissionPlan.returnHomeHeightM).
         line(3, "<wpml:globalRTHHeight>${num(max(plan.maxHeightM, securityHeight))}</wpml:globalRTHHeight>")
         line(3, "<wpml:droneInfo>")
         line(4, "<wpml:droneEnumValue>${target.droneEnum}</wpml:droneEnumValue>")

@@ -91,13 +91,14 @@ object FlightAdvisor {
             val ref = f.altitudeReference
             val dp = f.declarationPlan
             if (ref != null && dp != null) {
-                if (ref.ellipsoidM < dp.minAltW84M || ref.ellipsoidM + plan.plannedMaxHeightM.coerceAtMost(plan.legalMaxHeightM) > dp.maxAltW84M + 0.5) {
+                if (ref.ellipsoidM < dp.minAltW84M || ref.ellipsoidM + plan.plannedMaxHeightM.coerceAtMost(plan.legalCeilingM) > dp.maxAltW84M + 0.5) {
                     add(Advisory.of("BAND_MISMATCH", Level.WARNING, "Take-off height %1${'$'}s m W84 is outside the declared band %2${'$'}s-%3${'$'}s m; re-declare when online", m0(ref.ellipsoidM), m0(dp.minAltW84M), m0(dp.maxAltW84M)))
                 }
             }
             if (s != null && s.isFlying) {
-                val limit = min(plan.plannedMaxHeightM, plan.legalMaxHeightM)
-                if (s.heightAboveTakeoffM > plan.legalMaxHeightM) add(Advisory.of("ABOVE_LEGAL_HEIGHT", Level.CRITICAL, "%1${'$'}s m above take-off: legal limit is %2${'$'}s m", m0(s.heightAboveTakeoffM), m0(plan.legalMaxHeightM)))
+                // Above take-off, a terrain-following mission may legally go as high as its highest ground allows.
+                val limit = min(plan.plannedMaxHeightM, plan.legalCeilingM)
+                if (s.heightAboveTakeoffM > plan.legalCeilingM) add(Advisory.of("ABOVE_LEGAL_HEIGHT", Level.CRITICAL, "%1${'$'}s m above take-off: legal limit is %2${'$'}s m", m0(s.heightAboveTakeoffM), m0(plan.legalCeilingM)))
                 else if (s.heightAboveTakeoffM > limit) add(Advisory.of("ABOVE_PLANNED_HEIGHT", Level.WARNING, "%1${'$'}s m above take-off: planned maximum is %2${'$'}s m", m0(s.heightAboveTakeoffM), m0(limit)))
                 if (s.position.isValid && !Geo.contains(plan.area, s.position)) add(Advisory.of("OUTSIDE_AREA", Level.WARNING, "Outside the declared area"))
                 i.groundBelowTakeoffM?.let { below ->
@@ -135,15 +136,24 @@ object FlightAdvisor {
      * The aircraft's settings against the declaration: none of DJI's apps know the declared volume.
      * A return-to-home climb above the declared ceiling leaves the declared airspace; so does an aircraft
      * height limit above the legal one. A mission's safety rests on RTH when the RC link drops (docs/12).
+     * A height limit below the mission's top stops it short; so does an RTH height below the top of a
+     * terrain-following route (from a part low on the slope, the aircraft would fly home into the hill).
      */
     fun aircraftChecks(a: AircraftStatus?, plan: org.openutm.djiflight.core.model.FlightPlan, flying: Boolean = false): List<Advisory> = buildList {
         if (a == null) return@buildList
-        val ceiling = min(plan.plannedMaxHeightM, plan.legalMaxHeightM)
+        val ceiling = min(plan.plannedMaxHeightM, plan.legalCeilingM)
+        val mission = plan.mission
         a.settings.returnHomeHeightM?.let { rth ->
             if (rth > ceiling + 0.5) add(Advisory.of("RTH_ABOVE_DECLARED", Level.WARNING, "Return-to-home height %1${'$'}s m is above the declared %2${'$'}s m: lower it in Pre-flight", rth, m0(ceiling)))
+            else if (mission?.terrainFollowM != null && rth < mission.maxHeightM - 0.5) {
+                add(Advisory.of("RTH_BELOW_TERRAIN_ROUTE", Level.WARNING, "Return-to-home height %1${'$'}s m is below the route's top, %2${'$'}s m above take-off (it follows the terrain): raise it in Pre-flight", rth, m0(mission.maxHeightM)))
+            }
         }
         a.settings.maxAltitudeM?.let { max ->
-            if (max > plan.legalMaxHeightM + 0.5) add(Advisory.of("HEIGHT_LIMIT_ABOVE_LEGAL", Level.INFO, "Aircraft height limit %1${'$'}s m is above the legal %2${'$'}s m", max, m0(plan.legalMaxHeightM)))
+            if (max > plan.legalCeilingM + 0.5) add(Advisory.of("HEIGHT_LIMIT_ABOVE_LEGAL", Level.INFO, "Aircraft height limit %1${'$'}s m is above the legal %2${'$'}s m", max, m0(plan.legalCeilingM)))
+            if (mission != null && max < mission.maxHeightM - 0.5) {
+                add(Advisory.of("HEIGHT_LIMIT_BELOW_MISSION", Level.WARNING, "Aircraft height limit %1${'$'}s m is below the mission's top, %2${'$'}s m above take-off: raise it in Pre-flight", max, m0(mission.maxHeightM)))
+            }
         }
         a.settings.rcLostAction?.let { act ->
             if (plan.mission != null && act != RcLostAction.RETURN_HOME) {

@@ -17,6 +17,7 @@ internal fun advisoryString(key: String): Int? = when (key) {
     "COMPASS_ERROR_DETAIL" -> R.string.adv_compass_error_detail
     "GPS_WEAK" -> R.string.adv_gps_weak
     "HEIGHT_LIMIT_ABOVE_LEGAL" -> R.string.adv_height_limit_above_legal
+    "HEIGHT_LIMIT_BELOW_MISSION" -> R.string.adv_height_limit_below_mission
     "IMU_ERROR" -> R.string.adv_imu_error
     "IMU_ERROR_DETAIL" -> R.string.adv_imu_error_detail
     "IN_ZONE" -> R.string.adv_in_zone
@@ -28,6 +29,7 @@ internal fun advisoryString(key: String): Int? = when (key) {
     "RC_LOST_HOVER" -> R.string.adv_rc_lost_hover
     "RC_LOST_LAND" -> R.string.adv_rc_lost_land
     "RTH_ABOVE_DECLARED" -> R.string.adv_rth_above_declared
+    "RTH_BELOW_TERRAIN_ROUTE" -> R.string.adv_rth_below_terrain_route
     "TELEMETRY_STALE" -> R.string.adv_telemetry_stale
     "TERRAIN_ABOVE_LEGAL" -> R.string.adv_terrain_above_legal
     "TERRAIN_CLOSE" -> R.string.adv_terrain_close

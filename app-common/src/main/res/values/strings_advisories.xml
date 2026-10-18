@@ -14,6 +14,7 @@
     <string name="adv_compass_error_detail">Compass error: %1$s. Calibrate in Pre-flight</string>
     <string name="adv_gps_weak">Weak GNSS (level %1$s, %2$s satellites)</string>
     <string name="adv_height_limit_above_legal">Aircraft height limit %1$s m is above the legal %2$s m</string>
+    <string name="adv_height_limit_below_mission">Aircraft height limit %1$s m is below the mission\'s top, %2$s m above take-off: raise it in Pre-flight</string>
     <string name="adv_imu_error">IMU error</string>
     <string name="adv_imu_error_detail">IMU error: %1$s</string>
     <string name="adv_in_zone">Inside %1$s (%2$s)</string>
@@ -25,6 +26,7 @@
     <string name="adv_rc_lost_hover">If the RC signal is lost the aircraft will hover: missions expect return to home</string>
     <string name="adv_rc_lost_land">If the RC signal is lost the aircraft will land: missions expect return to home</string>
     <string name="adv_rth_above_declared">Return-to-home height %1$s m is above the declared %2$s m: lower it in Pre-flight</string>
+    <string name="adv_rth_below_terrain_route">Return-to-home height %1$s m is below the route\'s top, %2$s m above take-off (it follows the terrain): raise it in Pre-flight</string>
     <string name="adv_telemetry_stale">No telemetry from the aircraft for several seconds</string>
     <string name="adv_terrain_above_legal">Up to %1$s m above the ground where it drops away: legal limit %2$s m above ground</string>
     <string name="adv_terrain_close">Ground rising: about %1$s m below the aircraft (terrain model)</string>

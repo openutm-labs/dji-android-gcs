@@ -56,6 +56,7 @@ import org.openutm.djiflight.core.mission.SurveyPlanner
 import org.openutm.djiflight.core.mission.SurveyResult
 import org.openutm.djiflight.core.mission.SurveyPattern
 import org.openutm.djiflight.core.terrain.TerrainCheck
+import org.openutm.djiflight.core.terrain.TerrainFollow
 import org.openutm.djiflight.core.terrain.TerrainReport
 import org.openutm.djiflight.core.mission.SurveySpec
 import org.openutm.djiflight.core.model.FlightPlan
@@ -147,6 +148,12 @@ class PlanActivity : Activity() {
     private lateinit var headingRow: View
     private lateinit var sideOverlapRow: View
     private lateinit var travel: Stepper
+    private var followTerrain = false
+    /** Follow terrain is on, but the terrain file has no height at the take-off point or somewhere on the route. */
+    private var followFailed = false
+    private var flatWaypoints = 0
+    private lateinit var followRow: View
+    private lateinit var followToggle: ActionButton
     private lateinit var hours: Stepper
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -362,6 +369,11 @@ class PlanActivity : Activity() {
         advancedBox.addView(headingRow)
         advancedBox.addView(Stepper.row(this, getString(R.string.plan_gimbal), getString(R.string.plan_gimbal_hint), gimbal))
         advancedBox.addView(Stepper.row(this, getString(R.string.plan_travel), getString(R.string.plan_travel_hint), travel))
+        followToggle = ActionButton(this).set(getString(R.string.plan_follow_off), null, Kind.SECONDARY).apply {
+            setOnClickListener { followTerrain = !followTerrain; recompute(force = true) }
+        }
+        followRow = toggleRow(getString(R.string.plan_follow_terrain), getString(R.string.plan_follow_terrain_hint), followToggle)
+        advancedBox.addView(followRow)
         missionBox.addView(section(getString(R.string.plan_section_advanced), advancedSummary, advancedBox))
         missionBox.addView(advancedBox)
 
@@ -380,6 +392,19 @@ class PlanActivity : Activity() {
         body.addView(utmText)
         terrainText = text(14f, R.color.text2).apply { setLineSpacing(dp(3).toFloat(), 1f); setPadding(0, dp(8), 0, 0) }
         body.addView(terrainText)
+    }
+
+    private fun toggleRow(label: String, hint: String, toggle: ActionButton) = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        setPadding(0, dp(6), 0, dp(6))
+        val texts = LinearLayout(this@PlanActivity).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(text(15f, bold = true).apply { text = label })
+            addView(text(13f, R.color.text3).apply { text = hint })
+        }
+        addView(texts, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        addView(toggle, LinearLayout.LayoutParams(dp(96), dp(48)))
     }
 
     private fun spinner(labels: List<String>): Spinner = Spinner(this, Spinner.MODE_DROPDOWN).apply {
@@ -504,6 +529,19 @@ class PlanActivity : Activity() {
         gimbalPitchDeg = gimbal.current, travelHeightM = travel.current.takeIf { it > 0 }, pattern = pattern,
     )
 
+    /**
+     * With Follow terrain on and a terrain file: the survey [altitude] above the ground, from the
+     * take-off point ([TerrainFollow]). Without terrain heights for all of it, the flat survey and [followFailed].
+     */
+    private fun followed(r: SurveyResult): SurveyResult {
+        flatWaypoints = r.plan.waypoints.size
+        if (!followTerrain) return r
+        val t = graph.terrain ?: return r
+        val plan = center?.let { c -> runCatching { TerrainFollow.follow(r.plan, c, altitude.current, t, missionLimits()) }.getOrNull() }
+        if (plan == null) followFailed = true
+        return plan?.let { r.copy(plan = it) } ?: r
+    }
+
     /** Grid (maps), Crosshatch and Perimeter (3D); choosing one sets its usual gimbal angle. */
     private fun patternRow(): View {
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(6), 0, dp(4)) }
@@ -542,7 +580,8 @@ class PlanActivity : Activity() {
         val now = System.currentTimeMillis()
         if (force || now - lastGridAt > 150) {
             lastGridAt = now
-            surveyResult = if (mission && survey.size >= 3) runCatching { SurveyPlanner.plan(spec()) }.getOrNull() else null
+            followFailed = false
+            surveyResult = if (mission && survey.size >= 3) runCatching { SurveyPlanner.plan(spec()) }.getOrNull()?.let(::followed) else null
             terrainDirty = true
         }
         area = when {
@@ -620,12 +659,16 @@ class PlanActivity : Activity() {
         )
         headingRow.show(pattern != SurveyPattern.PERIMETER)
         sideOverlapRow.show(pattern != SurveyPattern.PERIMETER)
+        val terrainFile = graph.terrain != null
+        followRow.show(terrainFile)
+        val followLabel = getString(if (followTerrain) R.string.plan_follow_on else R.string.plan_follow_off)
+        if (followToggle.label.text.toString() != followLabel) followToggle.set(followLabel, null, if (followTerrain) Kind.PRIMARY else Kind.SECONDARY)
         advancedSummary.setIfChanged(
             getString(
                 R.string.plan_advanced_summary,
                 frontOverlap.current, sideOverlap.current, speed.current, heading.current, gimbal.current,
                 if (travel.current > 0) getString(R.string.plan_value_m, travel.current) else getString(R.string.plan_travel_off_lower),
-            ).replace("-", "−"),
+            ).replace("-", "−").let { if (followTerrain && terrainFile) getString(R.string.plan_advanced_summary_terrain, it) else it },
         )
         val session = signedIn()
         val login = graph.provisioning.value?.pilotLogin
@@ -729,18 +772,26 @@ class PlanActivity : Activity() {
 
     /** Lines for the UTM section, whether any is a warning, and a reason that blocks declaring. */
     private fun terrainLines(legal: Double): Triple<String, Boolean, String?> {
+        // Asked to follow the terrain and can't: declaring the flat survey instead would surprise the pilot.
+        val failed = if (mission && followFailed) getString(R.string.plan_terrain_follow_failed) else null
         val r = terrainReport ?: return Triple(
-            if (graph.terrain == null) getString(R.string.plan_terrain_none) else "",
-            false, null,
+            listOfNotNull(if (graph.terrain == null) getString(R.string.plan_terrain_none) else null, failed).joinToString("\n"),
+            failed != null, failed,
         )
         val adv = TerrainCheck.advisories(r, legal)
         val lines = buildList {
+            failed?.let { add(it) }
+            surveyResult?.plan?.takeIf { mission && it.terrainFollowM != null }?.let { p ->
+                val added = (p.waypoints.size - flatWaypoints).coerceAtLeast(0)
+                add(resources.getQuantityString(R.plurals.plan_terrain_follow, added, p.terrainFollowM, added))
+                add(getString(R.string.plan_terrain_follow_heights, p.waypoints.minOf { it.heightM }, p.waypoints.maxOf { it.heightM }))
+            }
             add(getString(if (mission) R.string.plan_terrain_ground_route else R.string.plan_terrain_ground_area, signed(r.lowestM), signed(r.highestM)))
             r.minClearanceM?.takeIf { adv.none { a -> a.code.startsWith("TERRAIN_INTO") || a.code == "TERRAIN_LOW_CLEARANCE" } }?.let { add(getString(R.string.plan_terrain_clearance, it)) }
             adv.forEach { add(advisoryText(it)) }
             terrainCrossCheck()?.let { add(it) }
         }
-        return Triple(lines.joinToString("\n"), adv.isNotEmpty(), adv.firstOrNull { it.level == Level.CRITICAL }?.let { advisoryText(it) })
+        return Triple(lines.joinToString("\n"), adv.isNotEmpty() || failed != null, failed ?: adv.firstOrNull { it.level == Level.CRITICAL }?.let { advisoryText(it) })
     }
 
     private fun signed(v: Double) = "%+.0f".format(v).replace("-", "−")
@@ -805,15 +856,21 @@ class PlanActivity : Activity() {
         DeclarationPlanner.plan(
             DeclarationInput(
                 clientRef = "preview", ring = a, ground = g, plannedMaxHeightM = maxHeight(legal), legalMaxHeightM = legal,
-                missionMaxHeightM = surveyResult?.plan?.maxHeightM, plannedStartMs = startMs, plannedEndMs = startMs + (hours.current * 3_600_000).toLong(),
+                missionMaxHeightM = surveyResult?.plan?.maxHeightM, groundRiseM = groundRise(), plannedStartMs = startMs, plannedEndMs = startMs + (hours.current * 3_600_000).toLong(),
                 nowMs = graph.clock.nowMs(), aircraftSerial = "-", originatingParty = "-", submittedBy = "-",
             ),
         )
     }.getOrNull()
 
-    /** A mission declares its highest point (travel altitude included) + 10 m, within the legal limit. */
+    /**
+     * A mission declares its highest point (travel altitude included) + 10 m, within the legal limit;
+     * that counts from the ground, so over terrain the route follows, from its highest ground.
+     */
     private fun maxHeight(legal: Double): Double =
-        if (mission) min(legal, (surveyResult?.plan?.maxHeightM ?: altitude.current) + 10) else min(legal, maxHeight.current)
+        if (mission) min(legal + groundRise(), (surveyResult?.plan?.maxHeightM ?: altitude.current) + 10) else min(legal, maxHeight.current)
+
+    /** How far a terrain-following route's highest ground is above take-off; 0 for any other flight. */
+    private fun groundRise(): Double = if (mission) surveyResult?.plan?.groundRiseM ?: 0.0 else 0.0
 
     private fun refuse(msg: String) {
         Sheet(this).title(getString(R.string.plan_refuse_title)).message(msg).button(getString(R.string.plan_ok)).show()

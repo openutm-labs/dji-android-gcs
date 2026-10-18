@@ -144,7 +144,7 @@ object TerrainFollow {
         return samples.indices.filter { keep[it] }.map { n ->
             val q = samples[n]
             val w = run[q.leg]
-            val h = ceil(q.h * 10) / 10
+            val h = ceil(q.h * 100) / 100 // whole centimetres, never lower
             val g = round(q.ground * 10) / 10
             if (q.f == 0.0) w.copy(heightM = h, groundM = g)
             else MissionWaypoint(q.p.lat, q.p.lng, h, speedMps = w.speedMps, headingDeg = heading(w.headingDeg, run[q.leg + 1].headingDeg, q.f), groundM = g)

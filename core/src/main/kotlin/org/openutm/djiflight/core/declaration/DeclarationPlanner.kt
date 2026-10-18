@@ -38,6 +38,12 @@ data class DeclarationInput(
     val legalMaxHeightM: Double = 120.0,
     /** Highest mission waypoint above take-off, for mission flights. */
     val missionMaxHeightM: Double? = null,
+    /**
+     * Terrain following: how far the highest ground under the route is above take-off
+     * ([org.openutm.djiflight.core.mission.MissionPlan.groundRiseM]). The legal limit counts from the
+     * ground, so above take-off the volume may reach this much over it.
+     */
+    val groundRiseM: Double = 0.0,
     val plannedStartMs: Long,
     val plannedEndMs: Long,
     val nowMs: Long,
@@ -66,7 +72,7 @@ object DeclarationPlanner {
 
     fun maxHeight(input: DeclarationInput): Double {
         require(input.plannedMaxHeightM > 0) { "max height must be positive" }
-        var h = min(input.plannedMaxHeightM, input.legalMaxHeightM)
+        var h = min(input.plannedMaxHeightM, input.legalMaxHeightM + input.groundRiseM.coerceAtLeast(0.0))
         input.missionMaxHeightM?.let { m ->
             require(m <= h) { "mission reaches $m m, above the allowed $h m" }
             h = min(h, m + input.marginM)
