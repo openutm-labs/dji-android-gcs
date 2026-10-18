@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v4 dji build: DJI's flight mode, GNSS, vision, RC and video link, battery and connection widgets,
+     at the right of the Fly screen's top bar (DJI's own sizes, a third larger for the RC screens). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:custom="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content" android:layout_height="30dp" android:orientation="horizontal" android:gravity="center_vertical">
+    <dji.ux.widget.FlightModeWidget android:layout_width="120dp" android:layout_height="28dp" />
+    <dji.ux.widget.GPSSignalWidget android:layout_width="56dp" android:layout_height="28dp" />
+    <dji.ux.widget.VisionWidget android:layout_width="28dp" android:layout_height="28dp" />
+    <dji.ux.widget.RemoteControlSignalWidget android:layout_width="48dp" android:layout_height="28dp" />
+    <dji.ux.widget.VideoSignalWidget android:layout_width="48dp" android:layout_height="28dp" />
+    <dji.ux.widget.BatteryWidget android:layout_width="110dp" android:layout_height="28dp" custom:excludeView="singleVoltage" />
+    <dji.ux.widget.ConnectionWidget android:layout_width="22dp" android:layout_height="22dp" android:layout_marginStart="4dp" />
+</LinearLayout>

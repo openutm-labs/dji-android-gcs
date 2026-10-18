@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One dark palette for every screen: solid surfaces behind all text, so it reads in sunlight
+     over the map or the camera picture. Status colours carry meaning only (docs/12, The app). -->
+<resources>
+    <color name="bg">#FF0B0E11</color>
+    <color name="bar">#FF05080A</color>
+    <color name="surface">#FF161B21</color>
+    <color name="surface2">#FF242C35</color>
+    <color name="surface3">#FF303A45</color>
+    <color name="outline">#FF3A4652</color>
+    <color name="scrim">#E6080B0E</color>
+    <color name="text">#FFFFFFFF</color>
+    <color name="text2">#FFC2CBD4</color>
+    <color name="text3">#FF8F9BA7</color>
+    <color name="accent">#FF1F6FE5</color>
+    <color name="accent_pressed">#FF1858B8</color>
+    <color name="ok">#FF138A50</color>
+    <color name="warn">#FFF5A524</color>
+    <color name="on_warn">#FF111111</color>
+    <color name="crit">#FFD92F35</color>
+    <color name="map_area">#FF1E88E5</color>
+</resources>

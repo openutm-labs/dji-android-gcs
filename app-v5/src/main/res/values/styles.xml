@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- DJI's UI Library v5 widgets expect an AppCompat theme; the Fly screen (app-common) is a plain
+         DeviceDefault activity, so DjiV5Platform inflates DJI's widgets through this one. -->
+    <style name="Theme.OpenUTM.DjiWidgets" parent="Theme.AppCompat.NoActionBar" />
+
+    <!-- DjiPanelsActivity: DJI's settings, status list and simulator panels over the Fly screen. -->
+    <style name="Theme.OpenUTM.DjiPanels" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:colorBackgroundCacheHint">@null</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Translucent</item>
+    </style>
+</resources>

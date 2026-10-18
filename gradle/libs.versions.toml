@@ -1,0 +1,82 @@
+[versions]
+kotlin = "2.1.0"
+agp = "8.7.3"
+coroutines = "1.9.0"
+serialization = "1.7.3"
+junit = "5.11.3"
+junit-platform = "1.11.3"
+dji-sdk-v4 = "4.18"
+# DJI UI Library (UX SDK) v4: last release 4.16.2 (2022-09-08), built against MSDK 4.16.2; used with 4.18 (to verify on hardware).
+dji-uxsdk-v4 = "4.16.2"
+# DJI MSDK v5: Mavic 3 Enterprise (since 5.1.0), Matrice 400 (since 5.15.0). 5.18.0 = 2026-05-22.
+dji-sdk-v5 = "5.18.0"
+# DJI's WPML library: the version dji-sdk-v5-aircraft 5.18.0 itself depends on (its POM).
+dji-wpmzsdk = "1.0.5.0"
+desugar = "2.1.3"
+appcompat = "1.7.0"
+constraintlayout = "2.1.4"
+# 11.13.x: PMTiles from local files (>= 11.7), minSdk 21, kotlin-stdlib 2.0 (13.x needs 2.2).
+maplibre = "11.13.5"
+zxing-embedded = "4.3.0"
+# zxing-android-embedded needs core 3.3.x below API 24 (its README).
+zxing-core = "3.3.3"
+androidx-core = "1.13.1"
+recyclerview = "1.3.2"
+multidex = "2.0.1"
+# DJI's UI Library v5 (uxsdk-v5, vendored): the versions its own sample pins (dependencies.gradle).
+cardview = "1.0.0"
+legacy-support = "1.0.0"
+lifecycle-uxsdk = "2.3.1"
+rxjava3-android = "3.0.0"
+rxkotlin3 = "3.0.0"
+lottie = "3.3.1"
+material-uxsdk = "1.0.0"
+iconics = "4.0.2"
+iconics-google-material = "3.0.1.4.original-kotlin"
+iconics-community-material = "3.5.95.1-kotlin"
+iconics-ionicons = "2.0.1.5-kotlin"
+
+[libraries]
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform" }
+dji-sdk-v4 = { module = "com.dji:dji-sdk", version.ref = "dji-sdk-v4" }
+dji-sdk-v4-provided = { module = "com.dji:dji-sdk-provided", version.ref = "dji-sdk-v4" }
+dji-uxsdk-v4 = { module = "com.dji:dji-uxsdk", version.ref = "dji-uxsdk-v4" }
+dji-sdk-v5 = { module = "com.dji:dji-sdk-v5-aircraft", version.ref = "dji-sdk-v5" }
+dji-sdk-v5-provided = { module = "com.dji:dji-sdk-v5-aircraft-provided", version.ref = "dji-sdk-v5" }
+dji-sdk-v5-network = { module = "com.dji:dji-sdk-v5-networkImp", version.ref = "dji-sdk-v5" }
+dji-wpmzsdk = { module = "com.dji:wpmzsdk", version.ref = "dji-wpmzsdk" }
+desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }
+androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }
+androidx-core = { module = "androidx.core:core", version.ref = "androidx-core" }
+androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
+maplibre-android = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
+zxing-android-embedded = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxing-embedded" }
+androidx-cardview = { module = "androidx.cardview:cardview", version.ref = "cardview" }
+androidx-legacy-support = { module = "androidx.legacy:legacy-support-v4", version.ref = "legacy-support" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
+androidx-lifecycle-common-java8 = { module = "androidx.lifecycle:lifecycle-common-java8", version.ref = "lifecycle-uxsdk" }
+androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "lifecycle-uxsdk" }
+rxandroid3 = { module = "io.reactivex.rxjava3:rxandroid", version.ref = "rxjava3-android" }
+rxkotlin3 = { module = "io.reactivex.rxjava3:rxkotlin", version.ref = "rxkotlin3" }
+lottie = { module = "com.airbnb.android:lottie", version.ref = "lottie" }
+material = { module = "com.google.android.material:material", version.ref = "material-uxsdk" }
+iconics-core = { module = "com.mikepenz:iconics-core", version.ref = "iconics" }
+iconics-views = { module = "com.mikepenz:iconics-views", version.ref = "iconics" }
+iconics-google-material = { module = "com.mikepenz:google-material-typeface", version.ref = "iconics-google-material" }
+iconics-community-material = { module = "com.mikepenz:community-material-typeface", version.ref = "iconics-community-material" }
+iconics-ionicons = { module = "com.mikepenz:ionicons-typeface", version.ref = "iconics-ionicons" }
+zxing-core = { module = "com.google.zxing:core", version.ref = "zxing-core" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }

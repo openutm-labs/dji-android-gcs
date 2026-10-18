@@ -1,0 +1,20 @@
+.DS_Store
+.gradle/
+.kotlin/
+build/
+local.properties
+*.iml
+.idea/
+captures/
+# Release and signing material never goes in git (docs/12, Distribution and updates)
+*.keystore
+*.jks
+*.p12
+*.apk
+*.aab
+# Device setups hold a client secret (provisioning-tool writes them here by convention)
+out/
+*.openutm-device.json
+# Map, terrain and imagery packs are per-lab downloads, not source
+*.pmtiles
+*.mbtiles

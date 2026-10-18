@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pre-flight panel (PreflightPanel) and pilot sign-in (SignInActivity). -->
+<resources>
+    <!-- Pre-flight: the panel -->
+    <string name="preflight_title">Pre-flight</string>
+    <string name="preflight_close">Close</string>
+    <string name="preflight_header_aircraft">Aircraft</string>
+    <string name="preflight_header_settings">Aircraft settings</string>
+    <string name="preflight_dji_settings">DJI settings and calibration</string>
+    <string name="preflight_dji_sensor_note">DJI\'s full sensor list: tap DJI\'s status at the top left of the Fly screen.</string>
+    <!-- Placeholder for a value not known yet -->
+    <string name="preflight_no_value">—</string>
+
+    <!-- Take-off height, when the controller and the aircraft disagree -->
+    <string name="preflight_takeoff_title">Take-off height: choose one</string>
+    <string name="preflight_takeoff_controller">Controller</string>
+    <string name="preflight_takeoff_aircraft">Aircraft</string>
+    <!-- Toast; %1$s is Controller or Aircraft -->
+    <string name="preflight_takeoff_chosen">Take-off height: %1$s</string>
+    <string name="preflight_takeoff_readings">Controller GNSS %1$.0f m · aircraft %2$.0f m (WGS-84 ellipsoid), %3$.0f m apart.</string>
+    <string name="preflight_takeoff_terrain">Terrain model: %1$.0f m.</string>
+    <string name="preflight_takeoff_sea_level">The controller\'s reading matches height above sea level, not the ellipsoid: the aircraft\'s is likely right.</string>
+    <string name="preflight_takeoff_band">The height band declared to UTM is built on the one you choose.</string>
+
+    <!-- Lab checklist -->
+    <!-- %1$s is a time of day -->
+    <string name="preflight_checklist_done_at">Lab checklist: done at %1$s</string>
+    <string name="preflight_checklist_no_plan">Lab checklist (plan a flight first)</string>
+    <!-- %1$d items ticked of %2$d -->
+    <string name="preflight_checklist_progress">Lab checklist: %1$d of %2$d</string>
+    <string name="preflight_checklist_done">Checklist done</string>
+    <string name="preflight_checklist_left">Tick every item (%1$d left)</string>
+
+    <!-- Aircraft rows -->
+    <string name="preflight_row_connection">Connection</string>
+    <string name="preflight_row_gnss">GNSS</string>
+    <string name="preflight_row_battery">Battery</string>
+    <string name="preflight_row_flight_mode">Flight mode</string>
+    <string name="preflight_row_home_point">Home point</string>
+    <string name="preflight_row_compass">Compass</string>
+    <string name="preflight_row_imu">IMU</string>
+    <string name="preflight_row_gimbal">Gimbal</string>
+    <string name="preflight_calibrate">Calibrate</string>
+    <string name="preflight_update">Update</string>
+    <!-- %1$s is the aircraft model, %2$s its serial number -->
+    <string name="preflight_connection_identity">%1$s · SN %2$s</string>
+    <string name="preflight_connecting">Connecting…</string>
+    <string name="preflight_not_connected">Not connected</string>
+    <string name="preflight_pill_no_data">No data</string>
+    <string name="preflight_pill_connected">Connected</string>
+    <string name="preflight_pill_off">Off</string>
+    <!-- %1$d satellites; %2$d is the GPS level, 0 to 5 -->
+    <string name="preflight_gnss_value">%1$d satellites, level %2$d of 5</string>
+    <string name="preflight_pill_good">Good</string>
+    <string name="preflight_pill_fair">Fair</string>
+    <string name="preflight_pill_weak">Weak</string>
+    <string name="preflight_battery_value">%1$d %%</string>
+    <!-- %1$d is the charge now, %2$d the low battery warning level -->
+    <string name="preflight_battery_value_warns">%1$d %% (warns at %2$d %%)</string>
+    <string name="preflight_pill_ok">OK</string>
+    <string name="preflight_pill_low">Low</string>
+    <!-- Battery pill: the battery is so low the aircraft should land -->
+    <string name="preflight_pill_land">Land</string>
+    <string name="preflight_home_recorded">Recorded</string>
+    <string name="preflight_home_not_recorded">Not recorded yet</string>
+    <string name="preflight_pill_set">Set</string>
+    <string name="preflight_pill_check">Check</string>
+    <string name="preflight_pill_error">Error</string>
+
+    <!-- Calibration -->
+    <string name="preflight_cancel">Cancel</string>
+    <!-- %1$s is Compass, IMU or Gimbal; %2$s is the aircraft's instruction -->
+    <string name="preflight_calibration_line">%1$s: %2$s</string>
+    <string name="preflight_calibrate_compass_title">Calibrate the compass</string>
+    <string name="preflight_calibrate_compass_text">Stand away from metal, cars, rebar and power lines, with nothing magnetic in your pockets. You will turn the aircraft a full circle level, then nose down. Takes about a minute.</string>
+    <string name="preflight_calibrate_imu_title">Calibrate the IMU</string>
+    <string name="preflight_calibrate_imu_text">Motors off, on a flat, level surface, out of the wind. The aircraft must not move. Takes 5–10 minutes; some aircraft ask for several positions (follow the controller).</string>
+    <string name="preflight_calibrate_gimbal_title">Calibrate the gimbal</string>
+    <string name="preflight_calibrate_gimbal_text">Place the aircraft on a flat, level surface and keep it still. Takes under a minute.</string>
+    <string name="preflight_not_now">Not now</string>
+    <string name="preflight_start">Start</string>
+    <string name="preflight_calibration_compass">Compass calibration</string>
+    <string name="preflight_calibration_imu">IMU calibration</string>
+    <string name="preflight_calibration_gimbal">Gimbal calibration</string>
+    <string name="preflight_cancel_calibration">Cancel calibration</string>
+    <string name="preflight_hide">Hide</string>
+    <string name="preflight_done">Done</string>
+
+    <!-- Home point -->
+    <string name="preflight_home_title">Update the home point</string>
+    <string name="preflight_home_message">Sets the home point to where the aircraft is now. Return to home flies here.</string>
+    <string name="preflight_home_updated">Home point updated</string>
+    <!-- %1$s is the aircraft's reason -->
+    <string name="preflight_home_not_updated">Not updated: %1$s</string>
+
+    <!-- Aircraft settings -->
+    <string name="preflight_stepper_m">%1$.0f m</string>
+    <string name="preflight_stepper_percent">%1$.0f %%</string>
+    <string name="preflight_setting_rth">Return-to-home height</string>
+    <string name="preflight_setting_max_altitude">Height limit</string>
+    <string name="preflight_setting_legal_limit">Legal limit %1$.0f m</string>
+    <string name="preflight_setting_distance_limit">Distance limit</string>
+    <string name="preflight_setting_distance_limit_hint">Off on most DJI aircraft by default</string>
+    <string name="preflight_setting_max_distance">Maximum distance</string>
+    <string name="preflight_setting_max_distance_hint">From the home point</string>
+    <string name="preflight_setting_rc_lost">If the RC signal is lost</string>
+    <string name="preflight_rc_return_home">Return home</string>
+    <string name="preflight_rc_hover">Hover</string>
+    <string name="preflight_rc_land">Land</string>
+    <string name="preflight_setting_low_battery">Low battery warning</string>
+    <string name="preflight_setting_critical_battery">Critical battery</string>
+    <string name="preflight_setting_critical_battery_hint">The aircraft lands at this level</string>
+    <string name="preflight_setting_obstacle">Obstacle sensing</string>
+    <string name="preflight_setting_obstacle_hint">Brakes before obstacles; not in Sport mode</string>
+    <string name="preflight_on">On</string>
+    <string name="preflight_off">Off</string>
+    <string name="preflight_saving">Saving…</string>
+    <string name="preflight_saved">Saved on the aircraft</string>
+    <!-- %1$s is the aircraft's reason, or preflight_no_aircraft -->
+    <string name="preflight_not_saved">Not saved: %1$s</string>
+    <string name="preflight_no_aircraft">no aircraft</string>
+    <string name="preflight_rth_hint_no_plan">Plan a flight to check it against the declaration</string>
+    <string name="preflight_rth_hint_ceiling">Declared ceiling %1$.0f m</string>
+    <string name="preflight_missions_expect_rth">Missions expect Return home if the RC signal is lost</string>
+    <string name="preflight_settings_unreadable">This aircraft\'s settings can\'t be read by this app.</string>
+    <string name="preflight_settings_connect">Connect the aircraft to see and change its settings.</string>
+    <string name="preflight_settings_reading">Reading the aircraft\'s settings…</string>
+    <!-- %1$s is a time of day -->
+    <string name="preflight_settings_read_at">Read from the aircraft at %1$s</string>
+    <!-- %1$s is the aircraft's own error text -->
+    <string name="preflight_aircraft_says">Aircraft says: %1$s</string>
+
+    <!-- Pilot sign-in -->
+    <string name="signin_title">Pilot sign-in</string>
+    <!-- %1$s is the identity server's host name -->
+    <string name="signin_opening">Opening %1$s…</string>
+    <string name="signin_prompt">Sign in with your lab account</string>
+    <!-- %1$s is the web view's error text -->
+    <string name="signin_page_unreachable">Can\'t reach the sign-in page (%1$s). Sign in needs a network; flights can still be planned with the roster.</string>
+    <string name="signin_server_unreachable">Can\'t reach the identity server: %1$s</string>
+    <string name="signin_checking">Checking the sign-in…</string>
+    <string name="signin_answer_early">Sign-in answer arrived before it was asked for</string>
+    <!-- %1$s is the pilot's name -->
+    <string name="signin_signed_in">Signed in: %1$s</string>
+    <string name="signin_not_accepted">Sign-in not accepted: %1$s</string>
+    <string name="signin_close">Close</string>
+</resources>

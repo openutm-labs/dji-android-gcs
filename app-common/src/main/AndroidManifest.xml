@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Pilot position (F3411 operator_location), take-off height and GNSS time. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Keeps recording and syncing while a flight is in progress, screen off or app in the background. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Background upload after the app is closed survives a reboot. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- In-app updates from the lab's release channel (sideloaded APKs). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- QR provisioning on phones (the scanner library requests it when used). -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <!-- The screens and services shared by every APK. Each app's own manifest names its FlightApp
+         subclass and sets the label, icon and theme. -->
+    <application>
+
+        <!-- Every screen: landscape (the RC screens), full screen, one dark theme. -->
+        <activity
+            android:name=".FlyActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.OpenUTM"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize|density">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".PlanActivity" android:label="Plan a flight" android:theme="@style/Theme.OpenUTM"
+            android:screenOrientation="sensorLandscape" android:windowSoftInputMode="adjustPan" />
+        <activity android:name=".FlightsActivity" android:label="Flights" android:theme="@style/Theme.OpenUTM"
+            android:screenOrientation="sensorLandscape" />
+        <activity android:name=".SetupActivity" android:label="Device setup" android:theme="@style/Theme.OpenUTM"
+            android:screenOrientation="sensorLandscape" />
+        <activity android:name=".SignInActivity" android:label="Pilot sign-in" android:theme="@style/Theme.OpenUTM"
+            android:screenOrientation="sensorLandscape" android:windowSoftInputMode="adjustResize" />
+
+        <service
+            android:name=".background.FlightForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="location|dataSync" />
+        <service
+            android:name=".background.SyncJobService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/update_paths" />
+        </provider>
+    </application>
+</manifest>

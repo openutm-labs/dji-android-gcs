@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Device setup, Flights, offline maps, app updates and the background services. -->
+<resources>
+    <!-- Setup: screen and sections -->
+    <string name="setup_title">Device setup</string>
+    <string name="setup_section_device">This device</string>
+    <string name="setup_section_maps">Offline maps</string>
+    <string name="setup_section_zones">Restriction zones</string>
+    <string name="setup_section_updates">App updates</string>
+
+    <!-- Setup: this device -->
+    <string name="setup_not_set_up">Not set up yet. Your lab admin gives you a setup code: as a QR code, a file on a microSD card, or text to paste.</string>
+    <string name="setup_pill_ready">Set up: ready to fly</string>
+    <string name="setup_pill_set_up">Set up</string>
+    <string name="setup_start_flying">Start flying</string>
+    <string name="setup_row_device">Device</string>
+    <string name="setup_row_lab">Lab</string>
+    <string name="setup_row_operator">Operator</string>
+    <string name="setup_row_utm_server">UTM server</string>
+    <string name="setup_row_sign_in">Sign-in</string>
+    <string name="setup_sign_in_dev">Development token</string>
+    <string name="setup_sign_in_device">Device credential</string>
+    <string name="setup_row_pilots_aircraft">Pilots · aircraft</string>
+    <string name="setup_row_height_limit">Height limit</string>
+    <string name="setup_height_m">%1$.0f m</string>
+    <string name="setup_row_checklist">Lab checklist</string>
+    <string name="setup_checklist_none">None</string>
+    <plurals name="setup_checklist_items">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <string name="setup_row_photos_go_to">Photos go to</string>
+    <string name="setup_not_set">Not set</string>
+    <string name="setup_replace">Replace this setup</string>
+    <string name="setup_tile_import">Import file</string>
+    <string name="setup_tile_import_hint">microSD card, Downloads</string>
+    <string name="setup_tile_scan">Scan QR code</string>
+    <string name="setup_tile_scan_hint">Phones with a camera</string>
+    <string name="setup_scan_prompt">Scan the device setup QR code</string>
+    <string name="setup_tile_paste">Paste code</string>
+    <string name="setup_paste_hint">openutm-device:1:… or JSON</string>
+    <string name="setup_paste_title">Paste the setup code</string>
+    <string name="setup_cancel">Cancel</string>
+    <string name="setup_use">Use</string>
+    <string name="setup_ok">OK</string>
+    <string name="setup_debug_dev_stack">Debug build: use the local dev stack (%1$s)</string>
+    <string name="setup_not_a_code_title">Not a setup code</string>
+    <string name="setup_not_a_code_message">The text isn\'t a setup code.</string>
+    <string name="setup_refused_title">Setup refused</string>
+    <string name="setup_delete_file_title">Delete the setup file from the card</string>
+    <string name="setup_delete_file_message">The file holds this device\'s secret. Delete it from the microSD card, or give the card back to your lab admin.</string>
+    <string name="setup_cant_read_file">Can\'t read the file</string>
+
+    <!-- Setup: offline maps -->
+    <string name="maps_body">The map works with no network: it reads map files stored on this controller, never online tiles.</string>
+    <string name="maps_no_files_listed">This device\'s setup lists no map files: import them from a card.</string>
+    <string name="maps_download">Download the lab\'s map files</string>
+    <string name="maps_import_basemap">Import a basemap (.pmtiles)</string>
+    <string name="maps_import_imagery">Import imagery (.pmtiles)</string>
+    <string name="maps_import_terrain">Import terrain (.pmtiles)</string>
+    <string name="maps_terrain_note">Terrain gives ground heights away from the site, the route\'s clearance over hills, height above ground in flight, and hillshade.</string>
+    <string name="maps_downloading">Downloading %1$s: %2$.1f MB</string>
+    <string name="maps_downloading_of">Downloading %1$s: %2$.1f of %3$.1f MB</string>
+    <string name="maps_imported">Map file imported</string>
+    <string name="maps_not_imported">Not imported: %1$s</string>
+    <!-- RegionPacks.describe(): one line per file, the label padded to 8 characters -->
+    <string name="maps_basemap">Basemap</string>
+    <string name="maps_imagery">Imagery</string>
+    <string name="maps_terrain">Terrain</string>
+    <string name="maps_file_line">%1$-8s %2$.1f MB, %3$s</string>
+    <string name="maps_file_none">%1$-8s none</string>
+    <!-- RegionPacks errors, shown in toasts -->
+    <string name="maps_error_open">cannot open the file</string>
+    <string name="maps_error_http">HTTP %1$d for %2$s</string>
+    <string name="maps_error_not_pmtiles">not a PMTiles v3 file</string>
+    <string name="maps_error_replace">could not replace %1$s</string>
+
+    <!-- Setup: restriction zones -->
+    <string name="setup_zones_body">Zones from UTM are kept on this controller and checked when you plan and fly. DJI\'s own GEO zones come from the aircraft.</string>
+    <string name="setup_row_utm_zones">UTM zones</string>
+    <string name="setup_zones_none">None downloaded yet</string>
+    <string name="setup_zones_count">%1$d, downloaded %2$.1f h ago</string>
+    <string name="setup_row_dji_zones">DJI GEO zones near the aircraft</string>
+    <string name="setup_zones_download">Download zones near here</string>
+    <string name="setup_no_position">No position yet (aircraft or this controller)</string>
+    <plurals name="setup_zones_downloaded">
+        <item quantity="one">%1$d zone downloaded</item>
+        <item quantity="other">%1$d zones downloaded</item>
+    </plurals>
+    <string name="setup_zones_offline">Offline: %1$s</string>
+    <string name="setup_zones_refused">Zones refused: %1$s</string>
+
+    <!-- Setup: app updates -->
+    <string name="update_row_this_app">This app</string>
+    <string name="update_row_android">Android</string>
+    <string name="update_row_available">Available</string>
+    <string name="update_no_channel">This device\'s setup has no release channel. Updates come as an APK on a card from the lab.</string>
+    <string name="update_check">Check for an update</string>
+    <string name="update_download_install">Download and install %1$s</string>
+    <string name="update_up_to_date">Up to date</string>
+    <string name="update_check_failed">Update check failed</string>
+    <string name="update_no_answer">No answer from the release channel.</string>
+    <string name="update_permission_title">One Android setting first</string>
+    <string name="update_permission_message">To install updates, Android needs your OK once.\n\nOn the next page, turn on “Allow from this source”, then press Back to return here and tap Download and install again.</string>
+    <string name="update_not_now">Not now</string>
+    <string name="update_continue">Continue</string>
+    <string name="update_downloading">Downloading %1$.1f of %2$.1f MB</string>
+    <string name="update_downloaded">Downloaded and checked (SHA-256)</string>
+    <string name="update_download_failed">Download failed</string>
+    <!-- UpdateManager errors, shown in the failure sheets -->
+    <string name="update_http">HTTP %1$d</string>
+    <string name="update_http_for">HTTP %1$d for %2$s</string>
+    <string name="update_sha_mismatch">downloaded APK does not match the channel\'s SHA-256</string>
+
+    <!-- Flights -->
+    <string name="flights_title">Flights</string>
+    <string name="flights_remove_old">Remove old exported</string>
+    <string name="flights_remove_title">Remove old flights?</string>
+    <string name="flights_remove_message">Removes flights that were exported and are older than 90 days. The app also does this when it starts.</string>
+    <string name="flights_cancel">Cancel</string>
+    <string name="flights_remove">Remove</string>
+    <plurals name="flights_removed">
+        <item quantity="one">Removed %1$d flight</item>
+        <item quantity="other">Removed %1$d flights</item>
+    </plurals>
+    <!-- Status pills: what UTM has of the flight -->
+    <string name="flights_status_in_utm">In UTM</string>
+    <string name="flights_status_not_declared">Not declared</string>
+    <string name="flights_status_declared">Declared</string>
+    <string name="flights_status_in_flight">In flight</string>
+    <string name="flights_status_uploading">Uploading</string>
+    <string name="flights_status_landed">Landed</string>
+    <string name="flights_status_export_it">Export it</string>
+    <string name="flights_status_not_in_utm">Not in UTM</string>
+    <string name="flights_status_cancelled">Cancelled</string>
+    <string name="flights_kind_mission">Mapping mission</string>
+    <string name="flights_kind_manual">Manual flight</string>
+    <!-- List rows: date · kind · photos -->
+    <string name="flights_kind_mission_short">mapping</string>
+    <string name="flights_kind_manual_short">manual</string>
+    <plurals name="flights_photos">
+        <item quantity="one">%1$d photo</item>
+        <item quantity="other">%1$d photos</item>
+    </plurals>
+    <string name="flights_empty">No flights on this controller yet.\n\nPlanned and flown flights appear here, with their export.</string>
+    <!-- Details -->
+    <string name="flights_row_utm">UTM</string>
+    <string name="flights_row_kind">Kind</string>
+    <string name="flights_row_time_in_air">Time in the air</string>
+    <string name="flights_minutes">%1$.0f min</string>
+    <string name="flights_row_samples">Samples</string>
+    <string name="flights_samples_pending">%1$d recorded, %2$d not uploaded</string>
+    <string name="flights_samples_all">%1$d recorded, all uploaded</string>
+    <string name="flights_row_photos">Photos</string>
+    <string name="flights_photos_none">none</string>
+    <string name="flights_photos_not_uploading">%1$d, not uploading</string>
+    <string name="flights_photos_in">%1$d, in %2$s</string>
+    <string name="flights_photos_to_upload">%1$d, to upload to %2$s</string>
+    <string name="flights_row_exported">Exported</string>
+    <string name="flights_yes">Yes</string>
+    <string name="flights_not_yet">Not yet</string>
+    <string name="flights_note">Declaration %1$s · flight %2$s</string>
+    <string name="flights_declaration_none">none</string>
+    <string name="flights_photos_to">Photos → %1$s</string>
+    <string name="flights_export_track">Export track (GeoJSON)</string>
+    <string name="flights_export_samples">Export samples (CSV)</string>
+    <string name="flights_delete_action">Delete from this controller</string>
+    <!-- Delete -->
+    <string name="flights_cant_delete_title">Can\'t delete this flight</string>
+    <string name="flights_cant_delete_message">Only finished, cancelled or expired flights can be deleted.</string>
+    <string name="flights_ok">OK</string>
+    <string name="flights_delete_title">Delete this flight?</string>
+    <string name="flights_delete_message">Its track and samples are removed from this controller. This can\'t be undone.</string>
+    <string name="flights_delete_not_exported">\n\nIt hasn\'t been exported.</string>
+    <string name="flights_keep">Keep it</string>
+    <string name="flights_delete">Delete</string>
+    <string name="flights_delete_refused">Only finished, cancelled or expired flights can be deleted</string>
+    <!-- Photos hand-off -->
+    <string name="flights_copy_map_name">Copy map name</string>
+    <string name="flights_clip_label">map name</string>
+    <string name="flights_copied">Copied: %1$s</string>
+    <string name="flights_close">Close</string>
+    <string name="flights_not_uploading">Not uploading</string>
+    <string name="flights_uploaded">Uploaded</string>
+    <!-- Export -->
+    <string name="flights_exported">Exported</string>
+    <string name="flights_export_failed">Export failed</string>
+    <string name="flights_unknown_error">Unknown error</string>
+
+    <!-- Background: the foreground service notification -->
+    <string name="bg_flight_in_progress">Flight in progress</string>
+    <string name="bg_declared">declared</string>
+    <string name="bg_not_declared_yet">not declared yet</string>
+    <string name="bg_offline">offline</string>
+    <!-- Notification title while a flight is open: "<phase>: <site>" -->
+    <string name="bg_title">%1$s: %2$s</string>
+    <string name="bg_phase_planned">Planned</string>
+    <string name="bg_phase_declared">Declared</string>
+    <string name="bg_phase_active">Active</string>
+    <string name="bg_phase_landed">Landed</string>
+    <string name="bg_phase_closed">Closed</string>
+    <string name="bg_phase_expired_unsynced">Expired, not synced</string>
+    <string name="bg_phase_undeclared">Undeclared</string>
+    <string name="bg_phase_cancelled">Cancelled</string>
+    <!-- The photo hand-off for an earlier flight: count, ", taken <from>–<to>", service, " → project", map name -->
+    <string name="flights_handoff_text">%1$d photos%2$s.\n1. Keep them on the aircraft\'s SD card until you\'re at a computer; don\'t format it.\n2. Open %3$s%4$s and create a map named:\n   %5$s\n3. Upload these photos from the card\'s DCIM folder (several flights can go in one upload).</string>
+    <string name="flights_handoff_span">, taken %1$s–%2$s</string>
+    <string name="setup_row_pilot_sign_in">Pilot sign-in</string>
+    <string name="setup_pilot_sign_in_off">Off: pilots are picked from the list</string>
+    <string name="setup_pilot_sign_in_optional">%1$s (optional)</string>
+    <string name="setup_pilot_sign_in_required">%1$s (required)</string>
+</resources>

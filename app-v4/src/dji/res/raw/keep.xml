@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Release resource shrinking, dji flavour: DJI's MSDK and UX SDK look many of their own resources
+     up by name at run time, so the shrinker can't see them. Without this the signed release crashed
+     at start (FPVTipLogic, String resource not found; emulator, 2026-10-18). Code shrinking stays on. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@string/*,@plurals/*,@array/*,@drawable/*,@mipmap/*,@layout/*,@raw/*,@xml/*,@color/*,@dimen/*,@style/*,@anim/*,@id/*" />

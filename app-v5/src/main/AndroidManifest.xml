@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The screens and services come from app-common; the SDK's own permissions come from its aar. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
+
+    <application
+        android:name="org.openutm.djiflight.app.v5.DjiV5FlightApp"
+        android:allowBackup="false"
+        android:label="@string/app_name"
+        android:icon="@drawable/ic_app"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+
+        <meta-data android:name="com.dji.sdk.API_KEY" android:value="${djiApiKey}" />
+
+        <!-- RC-N1/N2 with a phone (Mini 3/4 Pro class aircraft); the enterprise controllers connect internally. -->
+        <activity android:name="org.openutm.djiflight.app.FlyActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" />
+            </intent-filter>
+            <!-- accessory_filter.xml ships inside the DJI SDK aar. -->
+            <meta-data
+                android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED"
+                android:resource="@xml/accessory_filter" />
+        </activity>
+
+        <!-- DJI's settings, status list and simulator panels (DJI's UI Library v5), over the Fly screen. -->
+        <activity
+            android:name="org.openutm.djiflight.app.v5.DjiPanelsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.OpenUTM.DjiPanels"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize|density" />
+    </application>
+</manifest>

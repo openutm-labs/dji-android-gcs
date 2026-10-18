@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v5: the right half of DJI's TopBarPanelWidget, in its order, at the right of the Fly screen's top bar:
+     device health, GNSS, flight mode, simulator, AirSense, obstacle sensing, RC and video link,
+     battery, settings. Widths follow DJI's ratios (strings_dimension_ratios.xml) at a 28 dp height; the
+     wrap_content ones size themselves (WidgetSizeDescription WRAP). On narrower screens DjiV5Platform
+     hides device health (< 1000 dp wide), AirSense and obstacle sensing (< 820 dp); DJI's status list
+     still has them. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content" android:layout_height="28dp" android:orientation="horizontal" android:gravity="center_vertical">
+    <dji.v5.ux.warning.DeviceHealthAndStatusWidget android:id="@+id/dji_device_health" android:layout_width="wrap_content" android:layout_height="match_parent" android:layout_marginEnd="8dp" />
+    <dji.v5.ux.core.widget.gpssignal.GpsSignalWidget android:layout_width="wrap_content" android:layout_height="match_parent" android:layout_marginEnd="8dp" />
+    <dji.v5.ux.core.widget.flightmode.FlightModeWidget android:layout_width="wrap_content" android:layout_height="match_parent" android:layout_marginEnd="8dp" />
+    <dji.v5.ux.core.widget.simulator.SimulatorIndicatorWidget android:id="@+id/dji_simulator" android:layout_width="28dp" android:layout_height="match_parent" android:layout_marginEnd="8dp" />
+    <dji.v5.ux.core.widget.airsense.AirSenseWidget android:id="@+id/dji_air_sense" android:layout_width="32dp" android:layout_height="match_parent" android:layout_marginEnd="8dp" />
+    <dji.v5.ux.core.widget.perception.PerceptionStateWidget android:id="@+id/dji_perception" android:layout_width="wrap_content" android:layout_height="match_parent" android:layout_marginEnd="8dp" />
+    <dji.v5.ux.core.widget.remotecontrollersignal.RemoteControllerSignalWidget android:layout_width="48dp" android:layout_height="match_parent" android:layout_marginEnd="8dp" />
+    <dji.v5.ux.core.widget.videosignal.VideoSignalWidget android:layout_width="48dp" android:layout_height="match_parent" android:layout_marginEnd="8dp" />
+    <dji.v5.ux.core.widget.battery.BatteryWidget android:layout_width="wrap_content" android:layout_height="match_parent" android:layout_marginEnd="4dp" />
+    <dji.v5.ux.core.widget.setting.SettingWidget android:id="@+id/dji_setting" android:layout_width="40dp" android:layout_height="match_parent" />
+</LinearLayout>

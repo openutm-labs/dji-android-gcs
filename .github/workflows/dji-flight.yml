@@ -1,0 +1,80 @@
+# Tests and builds for the DJI flight apps; signed releases on a version tag (docs/12, Distribution).
+# Secrets for releases (Settings → Secrets and variables → Actions):
+#   OPENUTM_RELEASE_KEYSTORE_B64   base64 of the .jks from tools/release/make-release-key.sh
+#   OPENUTM_RELEASE_STORE_PASSWORD, OPENUTM_RELEASE_KEY_ALIAS, OPENUTM_RELEASE_KEY_PASSWORD
+#   DJI_API_KEY (org.openutm.djiflight.v4), DJI_V5_API_KEY (org.openutm.djiflight.v5)
+name: dji-flight
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      # The Blender integration tests skip themselves when no Blender answers on :8000.
+      - name: JVM tests (core, replay adapter)
+        run: ./gradlew :core:test :adapter-fake:test
+      # The runner's Android SDK (ANDROID_HOME) switches the Android modules on.
+      - name: Build the sim app
+        run: ./gradlew :app-v4:assembleSimDebug
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports
+          path: "**/build/reports/tests/"
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.OPENUTM_RELEASE_KEYSTORE_B64 }}
+        run: |
+          test -n "$KEYSTORE_B64" || { echo "OPENUTM_RELEASE_KEYSTORE_B64 is not set"; exit 1; }
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "OPENUTM_RELEASE_STORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+      - name: Build, check signatures, collect channels
+        env:
+          OPENUTM_RELEASE_STORE_PASSWORD: ${{ secrets.OPENUTM_RELEASE_STORE_PASSWORD }}
+          OPENUTM_RELEASE_KEY_ALIAS: ${{ secrets.OPENUTM_RELEASE_KEY_ALIAS }}
+          OPENUTM_RELEASE_KEY_PASSWORD: ${{ secrets.OPENUTM_RELEASE_KEY_PASSWORD }}
+          DJI_API_KEY: ${{ secrets.DJI_API_KEY }}
+          DJI_V5_API_KEY: ${{ secrets.DJI_V5_API_KEY }}
+        run: tools/release/publish.sh build/publish
+      # One GitHub release per tag; each app generation keeps its own channel file. Devices point
+      # update_url at https://github.com/openutm-labs/dji-android-gcs/releases/latest/download/latest-v4.json (or -v5).
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp build/publish/v4/latest.json build/publish/latest-v4.json
+          cp build/publish/v5/latest.json build/publish/latest-v5.json
+          gh release create "$GITHUB_REF_NAME" --title "OpenUTM Flight $GITHUB_REF_NAME" --notes "See docs/12 for what changed." \
+            build/publish/v4/*.apk build/publish/v5/*.apk build/publish/latest-v4.json build/publish/latest-v5.json

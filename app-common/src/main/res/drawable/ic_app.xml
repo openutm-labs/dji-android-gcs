@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder launcher icon: a quadcopter outline. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="48dp" android:height="48dp" android:viewportWidth="48" android:viewportHeight="48">
+    <path android:fillColor="#1565C0" android:pathData="M0,0h48v48h-48z" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="3" android:pathData="M14,14L34,34M34,14L14,34" />
+    <path android:fillColor="#FFFFFF" android:pathData="M14,14m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0M34,14m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0M14,34m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0M34,34m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0" />
+    <path android:fillColor="#1565C0" android:pathData="M24,24m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+</vector>

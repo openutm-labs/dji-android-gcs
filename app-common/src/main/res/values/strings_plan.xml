@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Plan screen (PlanActivity). -->
+<resources>
+    <!-- Top bar and map tools -->
+    <string name="plan_title">Plan a flight</string>
+    <string name="plan_tab_manual">Manual flight</string>
+    <string name="plan_tab_manual_short">Manual</string>
+    <string name="plan_tab_mission">Mapping mission</string>
+    <string name="plan_tab_mission_short">Mapping</string>
+    <string name="plan_import">Import boundary</string>
+    <string name="plan_import_short">Import</string>
+    <string name="plan_undo">Undo</string>
+    <string name="plan_clear_corners">Clear</string>
+    <string name="plan_declare">Save and declare</string>
+
+    <!-- Stepper values -->
+    <string name="plan_value_m">%1$.0f m</string>
+    <string name="plan_value_percent">%1$.0f %%</string>
+    <string name="plan_value_mps">%1$.0f m/s</string>
+    <string name="plan_value_degrees">%1$.0f°</string>
+    <string name="plan_value_hours_whole">%1$.0f h</string>
+    <string name="plan_value_hours">%1$.1f h</string>
+    <string name="plan_travel_off">Off</string>
+
+    <!-- Manual flight -->
+    <string name="plan_section_area">Operating area</string>
+    <string name="plan_area_radius">Area radius</string>
+    <string name="plan_circle_radius">Circle radius</string>
+    <string name="plan_circle_radius_hint">Around the take-off point</string>
+    <string name="plan_max_height">Max height</string>
+    <string name="plan_max_height_hint">Above take-off; legal limit %1$.0f m</string>
+    <string name="plan_boundary_remove">Remove</string>
+
+    <!-- Mapping mission -->
+    <string name="plan_section_survey">Survey</string>
+    <string name="plan_altitude">Altitude</string>
+    <string name="plan_altitude_hint">GSD</string>
+    <string name="plan_pattern_grid">Grid</string>
+    <string name="plan_pattern_crosshatch">Crosshatch</string>
+    <string name="plan_pattern_perimeter">Perimeter</string>
+    <string name="plan_pattern_grid_hint">Maps and elevation models: parallel lines, camera straight down</string>
+    <string name="plan_pattern_crosshatch_hint">3D models: the grid, then again at right angles, camera tilted</string>
+    <string name="plan_pattern_perimeter_hint">Sides of buildings and trees: once round the edge, camera facing the middle</string>
+    <string name="plan_section_advanced">Advanced</string>
+    <string name="plan_front_overlap">Front overlap</string>
+    <string name="plan_side_overlap">Side overlap</string>
+    <string name="plan_speed">Speed</string>
+    <string name="plan_heading">Flight direction</string>
+    <string name="plan_heading_hint">Of the lines, from north</string>
+    <string name="plan_gimbal">Gimbal angle</string>
+    <string name="plan_gimbal_hint">−90° = straight down</string>
+    <string name="plan_travel">Travel altitude</string>
+    <string name="plan_travel_hint">Climb to this before the start and after the end; above the altitude</string>
+    <!-- Overlap front / side, speed, flight direction, gimbal angle, travel altitude (a value or plan_travel_off_lower) -->
+    <string name="plan_advanced_summary">Overlap %1$.0f / %2$.0f %% · %3$.0f m/s · %4$.0f° · gimbal %5$.0f° · travel %6$s</string>
+    <string name="plan_travel_off_lower">off</string>
+    <string name="plan_gsd">GSD %1$.1f cm/px</string>
+    <string name="plan_gsd_perimeter">GSD %1$.1f cm/px · round the edge</string>
+    <!-- English keeps "lines" for one line too, as before. -->
+    <plurals name="plan_gsd_lines">
+        <item quantity="one">GSD %1$.1f cm/px · %2$d line</item>
+        <item quantity="other">GSD %1$.1f cm/px · %2$d lines</item>
+    </plurals>
+
+    <!-- Flight details -->
+    <string name="plan_section_details">Flight details</string>
+    <string name="plan_label_pilot">Pilot</string>
+    <string name="plan_label_aircraft">Aircraft</string>
+    <string name="plan_label_site">Site</string>
+    <string name="plan_label_start">Start</string>
+    <string name="plan_label_ground">Ground height at take-off</string>
+    <!-- An aircraft in the lab list without a model name -->
+    <string name="plan_aircraft_model_fallback">Aircraft</string>
+    <!-- The connected aircraft's model -->
+    <string name="plan_aircraft_unlisted">%1$s (connected, not in the lab list)</string>
+    <!-- The short form shown in the summary is the text before " (". -->
+    <string name="plan_site_here">Here (aircraft or this controller)</string>
+    <string name="plan_site_map">Chosen on the map</string>
+    <string name="plan_site_name_hint">Site name (saves its ground height)</string>
+    <string name="plan_date_today">Today</string>
+    <string name="plan_time_now">Now</string>
+    <string name="plan_duration">Duration</string>
+    <string name="plan_duration_hint">The declared window</string>
+    <string name="plan_enter_elevation">Enter the site\'s elevation</string>
+    <string name="plan_sign_in">Sign in</string>
+    <string name="plan_sign_out">Sign out</string>
+    <!-- Pilot name, date and time the sign-in is valid until -->
+    <string name="plan_signed_in">Signed in: %1$s · until %2$s</string>
+    <string name="plan_sign_in_required">Sign in to plan a flight (needs a network once)</string>
+    <string name="plan_sign_in_optional">Not signed in: the pilot picked above is recorded</string>
+    <string name="plan_no_pilot">no pilot</string>
+    <string name="plan_no_aircraft">no aircraft</string>
+    <string name="plan_when_now">now</string>
+    <!-- Pilot · aircraft · site · start, duration -->
+    <string name="plan_details_summary">%1$s · %2$s · %3$s · %4$s, %5$s</string>
+    <!-- Source (plan_source_*), height, uncertainty -->
+    <string name="plan_ground_value">%1$s: %2$.1f m (WGS-84 ellipsoid, ±%3$.0f m)</string>
+    <string name="plan_ground_unknown">Unknown here: stand at the take-off point, connect the aircraft, pick a saved site, or enter the elevation.</string>
+    <string name="plan_source_rtk">RTK</string>
+    <string name="plan_source_gnss">This controller\'s GNSS</string>
+    <string name="plan_source_aircraft">Aircraft</string>
+    <string name="plan_source_site">Saved site / entered</string>
+    <string name="plan_source_terrain">Terrain model</string>
+
+    <!-- No missions on the connected aircraft (its model) -->
+    <string name="plan_no_missions_title">No missions on the %1$s</string>
+    <string name="plan_no_missions_message">DJI\'s firmware has no waypoint missions on this aircraft. Plan a manual flight and fly the survey by hand.</string>
+    <string name="plan_ok">OK</string>
+
+    <!-- Map hints -->
+    <string name="plan_hint_imported">Imported boundary: %1$s</string>
+    <string name="plan_hint_imported_fallback">area</string>
+    <string name="plan_hint_move_takeoff">Tap or drag to move the take-off point</string>
+    <string name="plan_hint_first_corner">Tap the map to add the survey\'s corners</string>
+    <string name="plan_hint_add_corner">Tap to add corner %1$d (at least 3)</string>
+    <string name="plan_hint_drag_corner">Drag a corner to move it · drag + to add one</string>
+    <string name="plan_boundary_imported">Imported: %1$s</string>
+    <string name="plan_boundary_fallback">boundary</string>
+    <!-- Name of an imported boundary that has none -->
+    <string name="plan_boundary_name_default">imported</string>
+
+    <!-- Stats under the map -->
+    <string name="plan_stat_minutes">%1$.0f min</string>
+    <string name="plan_stat_flight_time">flight time</string>
+    <string name="plan_stat_area">area</string>
+    <string name="plan_stat_photos_value">≈ %1$d</string>
+    <string name="plan_stat_photos">photos</string>
+    <plurals name="plan_stat_batteries">
+        <item quantity="one">battery</item>
+        <item quantity="other">batteries</item>
+    </plurals>
+    <string name="plan_stat_boundary">boundary</string>
+    <string name="plan_stat_imported">imported</string>
+    <string name="plan_stat_radius">radius</string>
+    <string name="plan_stat_max_height">max height</string>
+    <string name="plan_stat_window">window</string>
+    <string name="plan_area_km2">%1$.1f km²</string>
+    <string name="plan_area_ha_whole">%1$.0f ha</string>
+    <string name="plan_area_ha">%1$.1f ha</string>
+
+    <!-- UTM section -->
+    <string name="plan_section_utm">UTM</string>
+    <!-- Parts, the most waypoints in one upload (always more than one part) -->
+    <plurals name="plan_utm_parts">
+        <item quantity="one">Uploads in %1$d part (more than %2$d waypoints)</item>
+        <item quantity="other">Uploads in %1$d parts (more than %2$d waypoints)</item>
+    </plurals>
+    <string name="plan_utm_travel_ignored">Travel altitude ignored: it must be above %1$.0f m</string>
+    <string name="plan_utm_gsd_tilted">GSD and spacing are computed as if straight down</string>
+    <string name="plan_utm_no_zones">No restriction zones touched</string>
+    <!-- Zone names -->
+    <string name="plan_utm_touches">Touches: %1$s</string>
+    <string name="plan_utm_zones_missing">Zones not downloaded yet (Setup, when online)</string>
+    <!-- Start and end times -->
+    <string name="plan_utm_declares">Declares %1$s – %2$s</string>
+    <string name="plan_utm_up_to">Up to %1$.0f m above take-off</string>
+    <string name="plan_utm_height_band">Height band %1$.0f–%2$.0f m (WGS-84)</string>
+    <string name="plan_terrain_none">No terrain file: ground heights and clearance over hills aren\'t checked (Setup → Offline maps)</string>
+    <!-- Lowest and highest ground, signed -->
+    <string name="plan_terrain_ground_route">Ground under the route: %1$s to %2$s m from take-off (terrain model)</string>
+    <string name="plan_terrain_ground_area">Ground in the area: %1$s to %2$s m from take-off (terrain model)</string>
+    <string name="plan_terrain_clearance">Lowest clearance %1$.0f m above it</string>
+    <string name="plan_terrain_gnss_msl">This controller\'s GNSS seems to give height above sea level, not the ellipsoid (%1$.0f m apart here): enter the site\'s elevation</string>
+    <string name="plan_terrain_check_lower">Check the ground height: the terrain model puts it %1$.0f m lower</string>
+    <string name="plan_terrain_check_higher">Check the ground height: the terrain model puts it %1$.0f m higher</string>
+
+    <!-- Footer: what blocks declaring, else how it will be declared -->
+    <string name="plan_problem_corners">Add at least 3 corners on the map</string>
+    <string name="plan_problem_takeoff">Choose the take-off point on the map</string>
+    <string name="plan_problem_ground">Ground height unknown: enter the site\'s elevation</string>
+    <string name="plan_problem_sign_in">Sign in as the pilot first (Flight details)</string>
+    <string name="plan_footer_online">Declared at once, online</string>
+    <string name="plan_footer_offline">Offline: saved now, declared when online</string>
+
+    <!-- Site elevation sheet -->
+    <string name="plan_elevation_title">Site elevation above sea level</string>
+    <string name="plan_elevation_note">From a map or survey, in metres. Used when the controller isn\'t at the site.</string>
+    <string name="plan_elevation_clear">Clear</string>
+    <string name="plan_elevation_use">Use</string>
+
+    <!-- Declaring -->
+    <string name="plan_refuse_title">Can\'t declare yet</string>
+    <string name="plan_refuse_sign_in">Sign in as the pilot first: Flight details → Sign in.</string>
+    <string name="plan_refuse_no_pilots">Add pilots to this device\'s setup first.</string>
+    <string name="plan_refuse_no_aircraft">Choose an aircraft: connect it, or add it to the lab list.</string>
+    <string name="plan_refuse_corners">Add at least 3 survey corners on the map.</string>
+    <string name="plan_refuse_takeoff">Choose the take-off point on the map.</string>
+    <string name="plan_refuse_ground">The ground height is unknown. Open Flight details and enter the site\'s elevation.</string>
+    <string name="plan_refuse_grid">The survey grid could not be built from these corners.</string>
+    <string name="plan_refuse_in_flight">A flight is in progress. Finish it on the Fly screen first.</string>
+    <string name="plan_replace_title">Replace the planned flight?</string>
+    <string name="plan_replace_message">It hasn\'t taken off. Its declaration is cancelled in UTM.</string>
+    <string name="plan_replace_keep">Keep it</string>
+    <string name="plan_replace">Replace</string>
+    <string name="plan_zones_title">The area touches restriction zones</string>
+    <!-- Zone name and source -->
+    <string name="plan_zones_item">• %1$s (%2$s)</string>
+    <string name="plan_zones_question">Declare anyway? Check what each zone allows first.</string>
+    <string name="plan_go_back">Go back</string>
+    <string name="plan_declare_anyway">Declare anyway</string>
+
+    <!-- Importing a boundary -->
+    <string name="plan_kml_no_polygon">no polygon in that file</string>
+    <string name="plan_kml_failed_title">Could not read the boundary</string>
+    <string name="plan_unknown_error">Unknown error</string>
+    <string name="plan_cd_fit">Fit the map to the area</string>
+</resources>

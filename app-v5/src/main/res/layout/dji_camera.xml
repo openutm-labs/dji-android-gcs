@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The aircraft camera area on the Fly screen (v5), built from DJI's UI Library v5 (uxsdk-v5). Layout and
+  sizes follow DJI's own default layout (uxsdk_activity_default_layout.xml in DJI's sample), less:
+  its top bar (in the Fly screen's own top bar: dji_status_*.xml), its map widget (the app's map is the
+  offline MapLibre one), the HSI and primary flight display (the telemetry strip and inset sit there),
+  and the settings, status and simulator panels (DjiPanelsActivity). The camera name and the
+  tap-to-focus target appear once a camera is picked (UxCameraView), not as "NOT_SUPPORTED" before.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/dji_camera_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <dji.v5.ux.core.widget.fpv.FPVWidget
+        android:id="@+id/widget_primary_fpv"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:uxsdk_cameraNameTextSize="14dp"
+        app:uxsdk_cameraSideTextSize="14dp"
+        app:uxsdk_sourceCameraNameVisibility="false"
+        app:uxsdk_sourceCameraSideVisibility="false">
+
+        <!-- Tap to focus/meter, as in DJI Pilot 2 -->
+        <dji.v5.ux.cameracore.widget.fpvinteraction.FPVInteractionWidget
+            android:id="@+id/widget_fpv_interaction"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </dji.v5.ux.core.widget.fpv.FPVWidget>
+
+    <dji.v5.ux.core.widget.remainingflighttime.RemainingFlightTimeWidget
+        android:id="@+id/widget_remaining_flight_time"
+        android:layout_width="0dp"
+        android:layout_height="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Camera bar, top right: NDVI, exposure readouts (ISO, shutter, aperture, EV, WB, storage), AE lock, focus.
+         Each row hangs from the flight-time bar (DJI's hang from the focus switch, which hides itself while
+         disconnected and pulled the row up under the top bar). -->
+    <dji.v5.ux.visualcamera.CameraNDVIPanelWidget
+        android:id="@+id/panel_ndvi_camera"
+        android:layout_width="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layout_height="@dimen/uxsdk_camera_config_height"
+        android:paddingLeft="2dp"
+        android:paddingRight="2dp"
+        app:layout_constraintEnd_toStartOf="@+id/panel_visual_camera"
+        app:layout_constraintTop_toBottomOf="@+id/widget_remaining_flight_time" />
+
+    <dji.v5.ux.visualcamera.CameraVisiblePanelWidget
+        android:id="@+id/panel_visual_camera"
+        android:layout_width="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layout_height="@dimen/uxsdk_camera_config_height"
+        android:paddingLeft="2dp"
+        android:paddingRight="2dp"
+        app:layout_constraintEnd_toStartOf="@+id/widget_auto_exposure_lock"
+        app:layout_constraintTop_toBottomOf="@+id/widget_remaining_flight_time" />
+
+    <dji.v5.ux.cameracore.widget.autoexposurelock.AutoExposureLockWidget
+        android:id="@+id/widget_auto_exposure_lock"
+        android:layout_width="@dimen/uxsdk_camera_bar_height"
+        android:layout_marginTop="4dp"
+        android:layout_height="@dimen/uxsdk_camera_bar_height"
+        android:layout_marginEnd="8dp"
+        android:padding="@dimen/uxsdk_camera_bar_padding"
+        app:layout_constraintEnd_toStartOf="@+id/widget_focus_mode"
+        app:layout_constraintTop_toBottomOf="@+id/widget_remaining_flight_time" />
+
+    <dji.v5.ux.cameracore.widget.focusmode.FocusModeWidget
+        android:id="@+id/widget_focus_mode"
+        android:layout_width="@dimen/uxsdk_camera_bar_height"
+        android:layout_marginTop="4dp"
+        android:layout_height="@dimen/uxsdk_camera_bar_height"
+        android:layout_marginEnd="8dp"
+        android:padding="2dp"
+        app:layout_constraintEnd_toStartOf="@+id/widget_focus_exposure_switch"
+        app:layout_constraintTop_toBottomOf="@+id/widget_remaining_flight_time" />
+
+    <dji.v5.ux.cameracore.widget.focusexposureswitch.FocusExposureSwitchWidget
+        android:id="@+id/widget_focus_exposure_switch"
+        android:layout_width="@dimen/uxsdk_camera_bar_height"
+        android:layout_height="@dimen/uxsdk_camera_bar_height"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="4dp"
+        android:padding="@dimen/uxsdk_camera_bar_padding"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/widget_remaining_flight_time" />
+
+    <!-- Capture: photo/video switch, shutter, exposure settings -->
+    <dji.v5.ux.cameracore.widget.cameracontrols.CameraControlsWidget
+        android:id="@+id/widget_camera_controls"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintDimensionRatio="@string/uxsdk_widget_camera_controls_ratio"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_percent="0.45"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.45" />
+
+    <dji.v5.ux.visualcamera.zoom.FocalZoomWidget
+        android:id="@+id/widget_focal_zoom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/widget_camera_controls"
+        app:layout_constraintTop_toBottomOf="@+id/widget_focus_exposure_switch"
+        app:layout_constraintVertical_bias="0.05" />
+
+    <!-- Lens switch (wide, zoom, thermal) on multi-lens payloads, top left -->
+    <dji.v5.ux.cameracore.widget.cameracontrols.lenscontrol.LensControlWidget
+        android:id="@+id/widget_lens_control"
+        android:layout_width="@dimen/uxsdk_76_dp"
+        android:layout_height="@dimen/uxsdk_95_dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="8dp"
+        android:padding="3dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/widget_remaining_flight_time" />
+
+    <!-- DJI's own take-off and return-to-home (the aircraft's standard calls), above the inset as in v4 -->
+    <dji.v5.ux.flight.takeoff.TakeOffWidget
+        android:id="@+id/widget_take_off"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="12dp"
+        android:padding="3dp"
+        app:layout_constraintBottom_toTopOf="@id/widget_return_to_home"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <dji.v5.ux.flight.returnhome.ReturnHomeWidget
+        android:id="@+id/widget_return_to_home"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="160dp"
+        android:padding="3dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

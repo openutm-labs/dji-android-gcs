@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Fly screen, laid out as DJI's own flight apps are (docs/12, The app):
+  status bar across the top; flight actions down the left in fixed slots; camera controls on the
+  right (inside the camera view); telemetry along the bottom; map or camera inset at bottom left.
+  Nothing here scrolls, and nothing appears or disappears in a way that moves another control.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="@color/bar">
+
+    <!-- Top bar: menu, aircraft status, UTM status … GNSS, battery (or DJI's own widgets in v4) -->
+    <LinearLayout android:id="@+id/topBar" android:layout_width="match_parent" android:layout_height="44dp"
+        android:orientation="horizontal" android:gravity="center_vertical" android:paddingEnd="8dp">
+        <ImageView android:id="@+id/btnMenu" android:layout_width="56dp" android:layout_height="44dp"
+            android:src="@drawable/ic_menu" android:scaleType="center" android:contentDescription="@string/fly_cd_menu" />
+        <FrameLayout android:id="@+id/statusLeading" android:layout_width="wrap_content" android:layout_height="match_parent" />
+        <FrameLayout android:id="@+id/utmPillBox" android:layout_width="wrap_content" android:layout_height="match_parent"
+            android:paddingStart="8dp" />
+        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+        <FrameLayout android:id="@+id/statusTrailing" android:layout_width="wrap_content" android:layout_height="match_parent" />
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="horizontal">
+
+        <!-- Action rail: three slots, always in the same place -->
+        <LinearLayout android:id="@+id/rail" android:layout_width="92dp" android:layout_height="match_parent"
+            android:orientation="vertical" android:paddingStart="8dp" android:paddingEnd="8dp" android:paddingTop="6dp" android:paddingBottom="8dp">
+            <FrameLayout android:id="@+id/slotPrimary" android:layout_width="match_parent" android:layout_height="80dp" />
+            <FrameLayout android:id="@+id/slotSecondary" android:layout_width="match_parent" android:layout_height="64dp" android:layout_marginTop="8dp" />
+            <FrameLayout android:id="@+id/slotPreflight" android:layout_width="match_parent" android:layout_height="64dp" android:layout_marginTop="8dp" />
+            <Space android:layout_width="1dp" android:layout_height="0dp" android:layout_weight="1" />
+        </LinearLayout>
+
+        <!-- Stage: camera or map, full size, with the overlays -->
+        <FrameLayout android:id="@+id/stage" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+            android:background="#000000">
+            <FrameLayout android:id="@+id/primary" android:layout_width="match_parent" android:layout_height="match_parent" />
+            <TextView android:id="@+id/videoLabel" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_gravity="center" android:textColor="@color/text2" android:textSize="15sp" android:visibility="gone" />
+
+            <!-- The worst warning, with "+N" for the rest -->
+            <LinearLayout android:id="@+id/warnings" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_gravity="top|start" android:layout_margin="8dp" android:orientation="horizontal" android:gravity="center_vertical" />
+
+            <FrameLayout android:id="@+id/inset" android:layout_width="200dp" android:layout_height="124dp"
+                android:layout_gravity="bottom|start" android:layout_margin="8dp" android:background="#FFFFFFFF" android:padding="2dp" />
+
+            <!-- Mission progress above the telemetry strip -->
+            <LinearLayout android:id="@+id/hudBottom" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_gravity="bottom|start" android:layout_marginBottom="8dp" android:orientation="vertical">
+                <LinearLayout android:id="@+id/missionBar" android:layout_width="match_parent" android:layout_height="34dp"
+                    android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="12dp" android:paddingEnd="12dp"
+                    android:layout_marginBottom="6dp" android:visibility="invisible">
+                    <TextView android:id="@+id/missionText" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                        android:textColor="@color/text" android:textSize="14sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+                    <ProgressBar android:id="@+id/missionProgress" style="@android:style/Widget.ProgressBar.Horizontal"
+                        android:layout_width="90dp" android:layout_height="8dp" android:layout_marginStart="10dp" android:max="1000" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/telemetry" android:layout_width="wrap_content" android:layout_height="56dp"
+                    android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="6dp" android:paddingEnd="6dp" />
+            </LinearLayout>
+
+            <ImageView android:id="@+id/btnRecenter" android:layout_width="52dp" android:layout_height="52dp"
+                android:layout_gravity="bottom|end" android:layout_margin="10dp" android:src="@drawable/ic_recenter"
+                android:scaleType="center" android:contentDescription="@string/fly_cd_recenter" />
+        </FrameLayout>
+    </LinearLayout>
+</LinearLayout>

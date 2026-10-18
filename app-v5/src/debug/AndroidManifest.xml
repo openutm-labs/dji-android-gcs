@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug only: the local Blender stack speaks plain HTTP (the SDK's aar sets cleartext off). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application android:usesCleartextTraffic="true" tools:replace="android:usesCleartextTraffic">
+        <!-- WPML self-test: adb shell am start -n org.openutm.djiflight.v5/org.openutm.djiflight.app.v5.WpmlSelfTestActivity -->
+        <activity android:name="org.openutm.djiflight.app.v5.WpmlSelfTestActivity" android:exported="true"
+            android:theme="@android:style/Theme.DeviceDefault" />
+    </application>
+</manifest>

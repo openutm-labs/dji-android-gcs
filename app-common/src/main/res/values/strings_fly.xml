@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Fly screen (FlyActivity), the map (MapController) and the shared UI kit (ui/). -->
+<resources>
+    <!-- Shared UI kit (ui/) -->
+    <string name="ui_back">Back</string>
+    <!-- Stepper: content descriptions of the − and + buttons -->
+    <string name="ui_less">Less</string>
+    <string name="ui_more">More</string>
+    <!-- Stepper: typing an exact value; %1$s and %2$s are the formatted limits -->
+    <string name="ui_stepper_between">Between %1$s and %2$s</string>
+    <string name="ui_cancel">Cancel</string>
+    <string name="ui_set">Set</string>
+
+    <!-- Map: the letter drawn in the home point marker (the map key says "Home point (H)") -->
+    <string name="map_home_letter">H</string>
+
+    <!-- Fly: common buttons -->
+    <string name="fly_close">Close</string>
+    <string name="fly_upload_now">Upload now</string>
+
+    <!-- Fly: top bar, aircraft status pill -->
+    <string name="fly_aircraft_connecting">Connecting…</string>
+    <string name="fly_aircraft_not_connected">Aircraft not connected</string>
+    <string name="fly_aircraft_no_data">No data from aircraft</string>
+    <string name="fly_aircraft_in_flight">In flight</string>
+    <string name="fly_aircraft_motors_on">Motors on</string>
+    <string name="fly_aircraft_weak_gnss">Weak GNSS</string>
+    <string name="fly_aircraft_ready">Ready to fly</string>
+    <!-- Fly: top bar chips; %1$s is the number of satellites, or — -->
+    <string name="fly_chip_gnss">GNSS %1$s</string>
+    <!-- %1$d is the battery charge in percent -->
+    <string name="fly_chip_battery">%1$d %%</string>
+    <string name="fly_chip_battery_none">Battery —</string>
+
+    <!-- Fly: top bar, UTM status pill -->
+    <string name="fly_utm_not_set_up">Not set up</string>
+    <string name="fly_utm_no_flight">No flight planned</string>
+    <string name="fly_utm_refused">UTM refused the declaration</string>
+    <string name="fly_utm_not_declared_offline">Not declared yet: offline</string>
+    <string name="fly_utm_declaring">Declaring…</string>
+    <!-- %1$s is a time of day -->
+    <string name="fly_utm_declared_from">Declared from %1$s</string>
+    <string name="fly_utm_declared">Declared</string>
+    <!-- %1$d is the number of position samples stored on the controller -->
+    <string name="fly_utm_offline_stored">Offline: %1$d stored</string>
+    <string name="fly_utm_not_declared">Not declared</string>
+    <string name="fly_utm_live">Live to UTM</string>
+    <!-- %1$d is the number of position samples still to upload -->
+    <string name="fly_utm_landed_pending">Landed: %1$d to upload</string>
+    <string name="fly_utm_landed_uploaded">Landed: all uploaded</string>
+    <string name="fly_utm_closed">Closed in UTM</string>
+    <string name="fly_utm_window_closed">Window closed: export it</string>
+    <string name="fly_utm_undeclared">Flown without declaration</string>
+    <string name="fly_utm_cancelled">Cancelled</string>
+
+    <!-- Fly: telemetry strip labels (height, distance, horizontal speed, vertical speed) and units -->
+    <string name="fly_tel_h">H</string>
+    <string name="fly_tel_d">D</string>
+    <string name="fly_tel_hs">H.S</string>
+    <string name="fly_tel_vs">V.S</string>
+    <string name="fly_unit_m">m</string>
+    <string name="fly_unit_mps">m/s</string>
+
+    <!-- Fly: mission bar -->
+    <!-- %1$s is the aircraft model -->
+    <string name="fly_mission_unsupported">%1$s can\'t fly missions: fly the survey by hand</string>
+    <string name="fly_mission_running">Mission · waypoint %1$d of %2$d</string>
+    <string name="fly_mission_running_part">Mission · waypoint %1$d of %2$d · part %3$d/%4$d</string>
+    <string name="fly_mission_paused">Mission paused at waypoint %1$d of %2$d</string>
+    <string name="fly_mission_uploading">Uploading the mission…</string>
+    <string name="fly_mission_uploaded_from">Mission uploaded · from waypoint %1$d of %2$d</string>
+    <string name="fly_mission_uploaded">Mission uploaded · %1$d waypoints</string>
+    <string name="fly_mission_to_upload">Mission · %1$d waypoints to upload</string>
+    <string name="fly_mission_part_done">Part %1$d of %2$d done</string>
+    <!-- Also the title of the sheet that offers Resume or Start over -->
+    <string name="fly_mission_stopped_at">Mission stopped at waypoint %1$d of %2$d</string>
+    <string name="fly_mission_complete">Mission complete</string>
+    <!-- %1$s is the error from the mission runner -->
+    <string name="fly_mission_failed">Mission: %1$s</string>
+    <string name="fly_mission">Mission</string>
+
+    <!-- Fly: warnings banner and list -->
+    <!-- %1$d is how many more warnings and notes there are -->
+    <string name="fly_warnings_more">+%1$d</string>
+    <string name="fly_warnings_none">Nothing to report.</string>
+    <string name="fly_warnings_title">Warnings and notes</string>
+
+    <!-- Fly: action rail -->
+    <string name="fly_rail_preflight">Pre-flight</string>
+    <!-- %1$d items ticked of %2$d -->
+    <string name="fly_rail_checklist">Checklist %1$d/%2$d</string>
+    <string name="fly_rail_set_up">Set up</string>
+    <string name="fly_rail_photos">Photos</string>
+    <string name="fly_rail_plan">Plan flight</string>
+    <string name="fly_rail_pause">Pause</string>
+    <string name="fly_rail_resume">Resume</string>
+    <string name="fly_rail_uploading">Uploading</string>
+    <string name="fly_rail_go">Go</string>
+    <string name="fly_rail_upload">Upload</string>
+    <string name="fly_rail_retry_upload">Retry upload</string>
+    <string name="fly_rail_upload_part">Upload part %1$d</string>
+    <string name="fly_rail_resume_ask">Resume…</string>
+    <string name="fly_rail_stop">Stop</string>
+    <string name="fly_rail_cancel">Cancel</string>
+    <string name="fly_rail_finish">Finish</string>
+    <string name="fly_rail_flying">Flying</string>
+    <string name="fly_rail_take_off">Take off when ready</string>
+
+    <!-- Fly: menu -->
+    <string name="fly_menu_title">Menu</string>
+    <string name="fly_menu_flights">Flights</string>
+    <string name="fly_menu_plan">Plan a flight</string>
+    <string name="fly_menu_preflight">Pre-flight and aircraft</string>
+    <string name="fly_menu_setup">Device setup, maps, updates</string>
+    <!-- %1$d is the number of flights waiting to upload -->
+    <string name="fly_menu_upload_waiting">Upload now (%1$d waiting)</string>
+    <string name="fly_menu_uploading_toast">Uploading when the network allows</string>
+    <string name="fly_menu_map_key">Map key</string>
+    <!-- App name, version, then the aircraft link's status -->
+    <string name="fly_menu_version">%1$s %2$s · %3$s</string>
+
+    <!-- Fly: map key -->
+    <string name="fly_mapkey_title">Map key</string>
+    <string name="fly_mapkey_area">Declared area</string>
+    <string name="fly_mapkey_zone">Restriction zone (UTM)</string>
+    <string name="fly_mapkey_geo_zone">DJI GEO zone (from the aircraft)</string>
+    <string name="fly_mapkey_mission">Mission route</string>
+    <string name="fly_mapkey_survey">Survey area</string>
+    <string name="fly_mapkey_track">Flown track</string>
+    <string name="fly_mapkey_aircraft">Aircraft (arrow: heading)</string>
+    <string name="fly_mapkey_home">Home point (H)</string>
+    <string name="fly_mapkey_pilot">You (this controller)</string>
+
+    <!-- Fly: UTM details sheet -->
+    <string name="fly_utm_title">UTM</string>
+    <string name="fly_utm_row_status">Status</string>
+    <string name="fly_utm_row_network">Network</string>
+    <string name="fly_utm_online">Online</string>
+    <string name="fly_utm_offline">Offline</string>
+    <string name="fly_utm_row_declaration">Declaration</string>
+    <string name="fly_utm_declaration_not_yet">not yet</string>
+    <string name="fly_utm_row_window">Window</string>
+    <!-- From and to times of day -->
+    <string name="fly_utm_window_value">%1$s – %2$s</string>
+    <string name="fly_utm_row_height_band">Height band</string>
+    <string name="fly_utm_height_band_value">%1$.0f – %2$.0f m (WGS-84)</string>
+    <string name="fly_utm_row_takeoff_height">Take-off height</string>
+    <!-- Height, its uncertainty, then where it came from -->
+    <string name="fly_utm_takeoff_height_value">%1$.1f m ±%2$.0f (%3$s)</string>
+    <string name="fly_utm_row_samples_waiting">Samples waiting</string>
+    <string name="fly_utm_row_last_upload">Last upload</string>
+    <string name="fly_utm_sync_up_to_date">All accepted</string>
+    <string name="fly_utm_sync_idle">Nothing to send</string>
+    <string name="fly_utm_sync_backoff">Retrying soon</string>
+    <string name="fly_utm_sync_blocked">Needs attention</string>
+
+    <!-- Fly: start the mission (slide to start) -->
+    <string name="fly_go_title">Start the mission</string>
+    <string name="fly_go_row_route">Route</string>
+    <string name="fly_go_route_value">%1$d waypoints · %2$.1f km</string>
+    <string name="fly_go_route_value_part">%1$d waypoints · %2$.1f km · part %3$d of %4$d</string>
+    <string name="fly_go_row_altitude">Altitude</string>
+    <string name="fly_go_altitude_value">%1$.0f m above take-off</string>
+    <string name="fly_go_row_rth_height">Return-to-home height</string>
+    <string name="fly_go_rth_height_value">%1$d m</string>
+    <string name="fly_go_row_at_end">At the end</string>
+    <string name="fly_go_return_home">Return home</string>
+    <string name="fly_go_row_rc_lost">If the RC signal is lost</string>
+    <string name="fly_go_rc_lost_hover">Hover</string>
+    <string name="fly_go_rc_lost_land">Land</string>
+    <string name="fly_go_rc_lost_unknown">Aircraft\'s failsafe</string>
+    <string name="fly_go_row_checklist">Lab checklist</string>
+    <string name="fly_go_checklist_done">Done</string>
+    <string name="fly_go_checklist_not_done">Not done</string>
+    <string name="fly_go_note">Keep the aircraft in sight. The RC\'s pause and return-home buttons always take over.</string>
+    <string name="fly_go_slide">Slide to start</string>
+    <string name="fly_go_not_now">Not now</string>
+    <string name="fly_go_open_checklist">Open checklist</string>
+
+    <!-- Fly: stop the mission -->
+    <string name="fly_stop_title">Stop the mission?</string>
+    <string name="fly_stop_message">The aircraft stops and hovers; fly it by hand or return home. Resume later carries on from the last waypoint reached.</string>
+    <string name="fly_stop_keep_flying">Keep flying</string>
+    <string name="fly_stop_confirm">Stop mission</string>
+
+    <!-- Fly: resume a stopped mission; %1$d is the waypoint it resumes from -->
+    <string name="fly_resume_message">Resume uploads the rest of the route from waypoint %1$d. The aircraft flies there first, then carries on, so no part of a survey line is missed.\n\nStart over flies the whole route again from waypoint 1.</string>
+    <string name="fly_resume_start_over">Start over</string>
+    <string name="fly_resume_from">Resume from %1$d</string>
+
+    <!-- Fly: finish the flight -->
+    <string name="fly_finish_title">Finish this flight?</string>
+    <string name="fly_finish_message">Recording stops. The declaration is ended in UTM once every sample is uploaded. For another battery in the same declaration, just take off again instead.</string>
+    <string name="fly_finish_not_yet">Not yet</string>
+    <string name="fly_finish_confirm">Finish flight</string>
+
+    <!-- Fly: cancel the flight -->
+    <string name="fly_cancel_title">Cancel this flight?</string>
+    <string name="fly_cancel_message">Only before take-off: the declaration is cancelled in UTM.</string>
+    <string name="fly_cancel_keep">Keep it</string>
+    <string name="fly_cancel_confirm">Cancel flight</string>
+
+    <!-- Fly: photos hand-off to the lab's processing service; %1$s is the service's name -->
+    <string name="fly_photos_title">Photos → %1$s</string>
+    <!-- %1$d photos, then the optional time span (fly_photos_span) -->
+    <string name="fly_photos_count">%1$d photos%2$s</string>
+    <!-- Time of the first and last photo, appended to fly_photos_count -->
+    <string name="fly_photos_span">, %1$s–%2$s</string>
+    <string name="fly_photos_map_name_in">Map name in %1$s</string>
+    <!-- %2$s is the project in the service -->
+    <string name="fly_photos_map_name_in_project">Map name in %1$s → %2$s</string>
+    <string name="fly_photos_copy">Copy</string>
+    <!-- Label of the clipboard entry -->
+    <string name="fly_photos_clip_label">map name</string>
+    <!-- %1$s is the copied map name -->
+    <string name="fly_photos_copied">Copied: %1$s</string>
+    <string name="fly_photos_steps">1. Keep the photos on the aircraft\'s SD card until you\'re at a computer; don\'t format it.\n2. In %1$s, create a map with the name above.\n3. Upload the photos from the card\'s DCIM folder (several flights can go in one upload).</string>
+    <string name="fly_photos_later">Later</string>
+    <string name="fly_photos_not_uploading">Not uploading</string>
+    <string name="fly_photos_uploaded">Uploaded</string>
+    <!-- Shown where the camera picture goes, until there is one -->
+    <string name="fly_video_none">No camera in this build</string>
+    <string name="fly_video_sim">Simulated aircraft: no camera</string>
+    <string name="fly_video_waiting">Waiting for video…</string>
+    <string name="fly_cd_menu">Menu</string>
+    <string name="fly_cd_recenter">Recenter the map</string>
+    <string name="fly_mapkey_credits">Map data: %1$s</string>
+</resources>

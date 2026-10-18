@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v4 dji build: DJI's own pre-flight status ("Ready to Go", "In Flight") at the left of the Fly
+     screen's top bar, as in DJI GO 4. Tapping it opens DJI's pre-flight checklist panel, which stays in
+     the camera view (dji_camera.xml); the two find each other over DJI's event bus, not by position. -->
+<dji.ux.widget.PreFlightStatusWidget xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="220dp" android:layout_height="30dp" />

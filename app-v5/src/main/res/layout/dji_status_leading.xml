@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v5: DJI's own system status ("Normal", warnings, "Disconnected") at the left of the Fly screen's top
+     bar, as in DJI Pilot 2 (DJI's UI Library v5, uxsdk-v5). Tapping it opens DJI's system status list
+     (DjiPanelsActivity). -->
+<dji.v5.ux.core.widget.systemstatus.SystemStatusWidget xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="200dp" android:layout_height="32dp" />
