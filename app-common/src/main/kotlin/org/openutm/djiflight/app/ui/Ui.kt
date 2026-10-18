@@ -86,6 +86,7 @@ class ActionButton(context: Context, private val vertical: Boolean = false) : Li
         ellipsize = android.text.TextUtils.TruncateAt.END
         gravity = Gravity.CENTER
     }
+    var fitLabel: Boolean = true
     var kind: Kind = Kind.SECONDARY
         set(v) { field = v; restyle() }
 
@@ -133,6 +134,7 @@ class ActionButton(context: Context, private val vertical: Boolean = false) : Li
      */
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        if (!fitLabel) return
         val avail = label.measuredWidth - label.paddingLeft - label.paddingRight
         // Vertical: what the slot leaves under the icon; a fixed-height slot clips a second line otherwise.
         val availH = if (!vertical || MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.UNSPECIFIED) Int.MAX_VALUE

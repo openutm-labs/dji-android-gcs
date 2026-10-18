@@ -1,6 +1,7 @@
 package org.openutm.djiflight.dji.v4
 
 import dji.common.error.DJIError
+import dji.common.flightcontroller.CompassState
 import dji.common.flightcontroller.CompassCalibrationState
 import dji.common.flightcontroller.ConnectionFailSafeBehavior
 import dji.common.flightcontroller.imu.CalibrationState
@@ -28,6 +29,8 @@ import org.openutm.djiflight.core.adapter.AircraftSetup
 import org.openutm.djiflight.core.adapter.AircraftStatus
 import org.openutm.djiflight.core.adapter.Calibration
 import org.openutm.djiflight.core.adapter.CalibrationProgress
+import org.openutm.djiflight.core.adapter.CompassHealth
+import org.openutm.djiflight.core.adapter.ObstacleSensing
 import org.openutm.djiflight.core.adapter.Health
 import org.openutm.djiflight.core.adapter.RcLostAction
 import org.openutm.djiflight.core.adapter.SensorStatus
@@ -66,14 +69,16 @@ class DjiV4AircraftSetup(
             rcLostAction = get<ConnectionFailSafeBehavior> { fc.getConnectionFailSafeBehavior(it) }?.let(::fromDji).marks(SetupItem.RC_LOST_ACTION),
             lowBatteryPercent = get<Int> { fc.getLowBatteryWarningThreshold(it) }.marks(SetupItem.LOW_BATTERY),
             criticalBatteryPercent = get<Int> { fc.getSeriousLowBatteryWarningThreshold(it) }.marks(SetupItem.CRITICAL_BATTERY),
-            obstacleAvoidance = fc.flightAssistant?.let { fa -> get<Boolean> { fa.getCollisionAvoidanceEnabled(it) } }.marks(SetupItem.OBSTACLE_AVOIDANCE),
+            obstacleAvoidance = fc.flightAssistant?.takeIf { ObstacleSensing.supportsV4(aircraft()?.model?.name) }?.let { fa -> get<Boolean> { fa.getCollisionAvoidanceEnabled(it) } }.marks(SetupItem.OBSTACLE_AVOIDANCE),
         )
         if (fc.compass != null) supports += SetupItem.COMPASS
         supports += SetupItem.IMU
         supports += SetupItem.HOME_RESET
         if (aircraft()?.gimbal != null) supports += SetupItem.GIMBAL
+        val compass = compassStatus(fc)
+        val imu = imuStatus()
         _status.update {
-            it.copy(settings = settings, compass = compassStatus(fc), imu = imuStatus(), gimbal = gimbalStatus(), supports = supports, readAtMs = System.currentTimeMillis(), error = null)
+            it.copy(settings = settings, compass = compass, imu = imu, gimbal = gimbalStatus(), supports = supports, readAtMs = System.currentTimeMillis(), error = null)
         }
         return Result.success(Unit)
     }
@@ -89,7 +94,7 @@ class DjiV4AircraftSetup(
             is SettingChange.RcLost -> done { fc.setConnectionFailSafeBehavior(toDji(change.action), it) }
             is SettingChange.LowBattery -> done { fc.setLowBatteryWarningThreshold(change.percent, it) }
             is SettingChange.CriticalBattery -> done { fc.setSeriousLowBatteryWarningThreshold(change.percent, it) }
-            is SettingChange.ObstacleAvoidance -> fc.flightAssistant?.let { fa -> done { fa.setCollisionAvoidanceEnabled(change.enabled, it) } }
+            is SettingChange.ObstacleAvoidance -> fc.flightAssistant?.takeIf { ObstacleSensing.supportsV4(aircraft()?.model?.name) }?.let { fa -> done { fa.setCollisionAvoidanceEnabled(change.enabled, it) } }
                 ?: Result.failure(IllegalStateException("no obstacle sensing on this aircraft"))
         }
         r.onFailure { e -> log("setting $change refused: ${e.message}"); _status.update { it.copy(error = e.message) } }
@@ -154,16 +159,17 @@ class DjiV4AircraftSetup(
         }
     }
 
-    private fun compassStatus(fc: FlightController): SensorStatus = when {
-        fc.compass == null -> SensorStatus()
-        fc.compass.isCalibrating -> SensorStatus(Health.WARNING, "Calibrating")
-        fc.compass.hasError() -> SensorStatus(Health.ERROR, "Needs calibration")
-        else -> SensorStatus(Health.OK, "Normal")
+    private suspend fun compassStatus(fc: FlightController): SensorStatus {
+        val compass = fc.compass ?: return SensorStatus()
+        val state = readKey<CompassState>(FlightControllerKey.create(FlightControllerKey.COMPASS_STATE))
+        fun states(s: CompassState): List<String> = listOfNotNull(s.sensorState?.name) + s.subCompassStates.orEmpty().flatMap(::states)
+        return CompassHealth.status(state?.let(::states).orEmpty(), compass.hasError(), compass.isCalibrating)
     }
 
-    private fun imuStatus(): SensorStatus {
-        val s = cached<IMUState>(FlightControllerKey.create(FlightControllerKey.IMU_STATE)) ?: return SensorStatus()
-        val worst = listOfNotNull(s.gyroscopeState, s.accelerometerState).maxByOrNull { severity(it) }
+    private suspend fun imuStatus(): SensorStatus {
+        val s = readKey<IMUState>(FlightControllerKey.create(FlightControllerKey.IMU_STATE)) ?: return SensorStatus()
+        fun states(state: IMUState): List<SensorState> = listOfNotNull(state.gyroscopeState, state.accelerometerState) + state.subIMUState.orEmpty().flatMap(::states)
+        val worst = states(s).maxByOrNull { severity(it) }
         return when (worst) {
             SensorState.NORMAL_BIAS -> SensorStatus(Health.OK, "Normal")
             SensorState.MEDIUM_BIAS, SensorState.WARMING_UP, SensorState.IN_MOTION, SensorState.CALIBRATING -> SensorStatus(Health.WARNING, words(worst))
@@ -190,6 +196,21 @@ class DjiV4AircraftSetup(
     private fun running(t: Calibration, text: String, pct: Int? = null) = CalibrationProgress(t, CalibrationProgress.State.RUNNING, text, pct)
     private fun ended(t: Calibration, ok: Boolean, hint: String = "") =
         CalibrationProgress(t, if (ok) CalibrationProgress.State.SUCCEEDED else CalibrationProgress.State.FAILED, if (ok) "Calibration complete" else "Calibration failed. $hint".trim(), if (ok) 100 else null)
+
+    /** Fetch instead of relying on a cache that no widget may have populated. No single-listener setters. */
+    private suspend fun <T> readKey(key: dji.keysdk.DJIKey): T? = withTimeoutOrNull(5_000) {
+        suspendCancellableCoroutine<T?> { cont ->
+            val manager = KeyManager.getInstance()
+            if (manager == null) { cont.resume(null); return@suspendCancellableCoroutine }
+            runCatching {
+                manager.getValue(key, object : dji.keysdk.callback.GetCallback {
+                    @Suppress("UNCHECKED_CAST")
+                    override fun onSuccess(value: Any) { if (cont.isActive) cont.resume(value as? T) }
+                    override fun onFailure(error: DJIError) { if (cont.isActive) cont.resume(null) }
+                })
+            }.onFailure { if (cont.isActive) cont.resume(null) }
+        }
+    }
 
     @Suppress("UNCHECKED_CAST")
     private fun <T> cached(key: dji.keysdk.DJIKey): T? = runCatching { KeyManager.getInstance()?.getValue(key) as? T }.getOrNull()

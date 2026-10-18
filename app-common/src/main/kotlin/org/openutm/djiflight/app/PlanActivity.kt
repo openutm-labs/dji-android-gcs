@@ -640,7 +640,7 @@ class PlanActivity : Activity() {
             stat(0, area?.let { hectares(it) } ?: "—", getString(R.string.plan_stat_area))
             stat(1, if (boundary != null) getString(R.string.plan_stat_boundary) else getString(R.string.plan_value_m, radius.current), getString(if (boundary != null) R.string.plan_stat_imported else R.string.plan_stat_radius))
             stat(2, getString(R.string.plan_value_m, maxHeight.current), getString(R.string.plan_stat_max_height))
-            stat(3, hours.current.let { if (it % 1.0 == 0.0) getString(R.string.plan_value_hours_whole, it) else getString(R.string.plan_value_hours, it) }, getString(R.string.plan_stat_window))
+            stat(3, hours.current.let { if (it % 1.0 == 0.0) getString(R.string.plan_value_hours_whole, it) else getString(R.string.plan_value_hours, it) }, getString(R.string.plan_stat_duration))
         }
     }
 
@@ -710,12 +710,13 @@ class PlanActivity : Activity() {
         }
         if (a != null) {
             val conflicts = FlightAdvisor.areaConflicts(a, graph.zones.index.value, graph.aircraftZones.value)
-            utm.appendLine(if (conflicts.isEmpty()) getString(R.string.plan_utm_no_zones) else getString(R.string.plan_utm_touches, conflicts.joinToString { it.name }))
+            utm.appendLine(if (conflicts.isEmpty()) getString(R.string.plan_utm_no_zones) else getString(R.string.plan_utm_touches, org.openutm.djiflight.core.zones.ZoneSummary.of(conflicts).joinToString { zoneDescription(it) }))
             val age = graph.zones.ageMs()
             if (age == null) utm.appendLine(getString(R.string.plan_utm_zones_missing))
             draft(legal)?.let { d ->
-                val t = DateFormat.getTimeInstance(DateFormat.SHORT)
+                val t = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
                 utm.appendLine(getString(R.string.plan_utm_declares, t.format(Date(d.startMs)), t.format(Date(d.endMs))))
+                utm.appendLine(getString(R.string.plan_utm_sync_grace, DeclarationPlanner.DEFAULT_SYNC_GRACE_MS / 3_600_000.0))
                 utm.appendLine(getString(R.string.plan_utm_up_to, maxHeight(legal)))
                 utm.append(getString(R.string.plan_utm_height_band, d.minAltW84M, d.maxAltW84M))
             } ?: run { if (ground == null) problem = problem ?: getString(R.string.plan_problem_ground) }
@@ -919,7 +920,7 @@ class PlanActivity : Activity() {
             current != null && graph.flightInProgress(current) -> Sheet(this).title(getString(R.string.plan_replace_title))
                 .message(getString(R.string.plan_replace_message)).button(getString(R.string.plan_replace_keep)).button(getString(R.string.plan_replace), Kind.PRIMARY) { go() }.show()
             conflicts.isNotEmpty() -> Sheet(this).title(getString(R.string.plan_zones_title))
-                .message(conflicts.joinToString("\n") { getString(R.string.plan_zones_item, it.name, it.source) } + "\n\n" + getString(R.string.plan_zones_question))
+                .message(org.openutm.djiflight.core.zones.ZoneSummary.of(conflicts).joinToString("\n") { getString(R.string.plan_zones_summary_item, zoneDescription(it)) } + "\n\n" + getString(R.string.plan_zones_question))
                 .button(getString(R.string.plan_go_back)).button(getString(R.string.plan_declare_anyway), Kind.WARN) { go() }.show()
             else -> go()
         }

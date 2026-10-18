@@ -210,7 +210,7 @@ class FlightsActivity : Activity() {
 
     private fun export(f: FlightSnapshot, kind: String) {
         pendingExport = f.flightId to kind
-        val name = "flight-${f.plan?.siteName?.replace(Regex("[^A-Za-z0-9_-]"), "_") ?: f.flightId.take(8)}-${f.flightId.take(8)}.${if (kind == "csv") "csv" else "geojson"}"
+        val name = FlightExport.fileName(f, kind)
         startActivityForResult(
             Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
                 .setType(if (kind == "csv") "text/csv" else "application/geo+json").putExtra(Intent.EXTRA_TITLE, name),

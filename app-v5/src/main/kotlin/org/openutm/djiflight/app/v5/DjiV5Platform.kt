@@ -189,6 +189,7 @@ class UxCameraView : VideoPreview {
     override val available = true
     override val labelRes = org.openutm.djiflight.app.R.string.fly_video_waiting
     /** DJI's remaining-flight-time bar and camera bar across the top of the camera view. */
+    override val overlayStartDp = 56
     override val overlayTopDp = 16 + 35 + 8
     /** DJI's layout, once the SDK is up ([DjiV5Platform.whenSdkReady]); until then an empty black frame. */
     private var root: ViewGroup? = null

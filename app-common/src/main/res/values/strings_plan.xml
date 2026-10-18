@@ -85,8 +85,8 @@
     <string name="plan_site_name_hint">Site name (saves its ground height)</string>
     <string name="plan_date_today">Today</string>
     <string name="plan_time_now">Now</string>
-    <string name="plan_duration">Duration</string>
-    <string name="plan_duration_hint">The declared window</string>
+    <string name="plan_duration">Flight duration</string>
+    <string name="plan_duration_hint">Planned flying time</string>
     <string name="plan_enter_elevation">Enter the site\'s elevation</string>
     <string name="plan_sign_in">Sign in</string>
     <string name="plan_sign_out">Sign out</string>
@@ -139,7 +139,7 @@
     <string name="plan_stat_imported">imported</string>
     <string name="plan_stat_radius">radius</string>
     <string name="plan_stat_max_height">max height</string>
-    <string name="plan_stat_window">window</string>
+    <string name="plan_stat_duration">duration</string>
     <string name="plan_area_km2">%1$.1f km²</string>
     <string name="plan_area_ha_whole">%1$.0f ha</string>
     <string name="plan_area_ha">%1$.1f ha</string>
@@ -159,6 +159,7 @@
     <string name="plan_utm_zones_missing">Zones not downloaded yet (Setup, when online)</string>
     <!-- Start and end times -->
     <string name="plan_utm_declares">Declares %1$s – %2$s</string>
+    <string name="plan_utm_sync_grace">Includes up to %1$.0f h after the planned end to upload telemetry.</string>
     <string name="plan_utm_up_to">Up to %1$.0f m above take-off</string>
     <string name="plan_utm_height_band">Height band %1$.0f–%2$.0f m (WGS-84)</string>
     <string name="plan_terrain_none">No terrain file: ground heights and clearance over hills aren\'t checked (Setup → Offline maps)</string>
@@ -218,4 +219,12 @@
     <string name="plan_kml_failed_title">Could not read the boundary</string>
     <string name="plan_unknown_error">Unknown error</string>
     <string name="plan_cd_fit">Fit the map to the area</string>
+    <string name="plan_zone_authorization">Authorization</string>
+    <string name="plan_zone_restricted">Restricted</string>
+    <string name="plan_zone_warning">Warning</string>
+    <string name="plan_zone_enhanced_warning">Enhanced warning</string>
+    <string name="plan_zone_altitude">Altitude</string>
+    <string name="plan_zone_unknown">Other zone</string>
+    <string name="plan_zone_description">%1$s (%2$s)</string>
+    <string name="plan_zones_summary_item">• %1$s</string>
 </resources>

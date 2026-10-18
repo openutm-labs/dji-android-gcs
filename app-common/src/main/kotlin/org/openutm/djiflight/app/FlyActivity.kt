@@ -72,6 +72,7 @@ class FlyActivity : Activity() {
     private lateinit var map: MapController
     private lateinit var cameraView: View
     private lateinit var video: VideoPreview
+    private lateinit var mapPrimary: FrameLayout
     private lateinit var primary: FrameLayout
     private lateinit var inset: FrameLayout
     private lateinit var videoLabel: TextView
@@ -111,6 +112,8 @@ class FlyActivity : Activity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setContentView(R.layout.activity_fly)
         primary = findViewById(R.id.primary)
+        mapPrimary = FrameLayout(this)
+        findViewById<FrameLayout>(R.id.stage).addView(mapPrimary, 0, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         inset = findViewById(R.id.inset)
         videoLabel = findViewById(R.id.videoLabel)
         warnings = findViewById(R.id.warnings)
@@ -125,7 +128,7 @@ class FlyActivity : Activity() {
         map = MapController(this, { graph.maps.basemap }, { graph.maps.imagery }, { graph.maps.terrain })
         mapIsPrimary = !video.available || savedInstanceState?.getBoolean("mapPrimary") == true
         placeViews()
-        map.attachTo(if (mapIsPrimary) primary else inset, savedInstanceState)
+        map.attachTo(if (mapIsPrimary) mapPrimary else inset, savedInstanceState)
         map.onUserMove { userMovedMap = true }
         swapCatcher = View(this).apply { setOnClickListener { mapIsPrimary = !mapIsPrimary; placeViews() } }
         placeViews()
@@ -133,6 +136,15 @@ class FlyActivity : Activity() {
         buildTopBar()
         buildRail()
         buildHud()
+        findViewById<View>(R.id.stage).addOnLayoutChangeListener { stage, l, t, r, b, oldL, oldT, oldR, oldB ->
+            if (r - l != oldR - oldL || b - t != oldB - oldT) stage.post { layoutHud() }
+        }
+        video.onPanelVisibilityChanged { open ->
+            warnings.show(!open)
+            inset.show(video.available && !open)
+            hudBottom.show(!open)
+            recenter.show(!open && mapIsPrimary && userMovedMap)
+        }
 
         askPermissions()
         graph.start(this)
@@ -161,12 +173,12 @@ class FlyActivity : Activity() {
         if (vendor != null) {
             // The vendor's own sizes (DJI's widgets don't size themselves), centred in the bar.
             fun place(v: View) = FrameLayout.LayoutParams(v.layoutParams ?: ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)).apply { gravity = Gravity.CENTER_VERTICAL }
-            leading.addView(vendor.leading, place(vendor.leading))
+            leading.addView(vendor.leading, place(vendor.leading).apply { width = ViewGroup.LayoutParams.MATCH_PARENT })
             trailing.addView(vendor.trailing, place(vendor.trailing))
         } else {
             aircraftPill = Pill(this, 14f).also { p ->
                 p.setOnClickListener { openPreflight() }
-                leading.addView(p, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL))
+                leading.addView(p, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL))
             }
             val chips = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
             modeChip = Pill(this, 13f).also { chips.addView(it) }
@@ -176,7 +188,7 @@ class FlyActivity : Activity() {
             trailing.addView(chips, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL))
         }
         utmPill.setOnClickListener { showUtmDetails() }
-        findViewById<FrameLayout>(R.id.utmPillBox).addView(utmPill, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL))
+        findViewById<FrameLayout>(R.id.utmPillBox).addView(utmPill, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL))
     }
 
     private fun buildRail() {
@@ -228,11 +240,11 @@ class FlyActivity : Activity() {
     }
 
     private fun placeViews() {
-        (cameraView.parent as? FrameLayout)?.removeView(cameraView)
-        val videoParent = if (mapIsPrimary) inset else primary
-        videoParent.addView(cameraView, 0, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        // Keep the SDK tree attached: v4 panels unsubscribe permanently on detach.
+        // Resize its stable host for the inset instead of reparenting the widgets.
+        if (cameraView.parent == null) primary.addView(cameraView, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
         video.setCompact(mapIsPrimary)
-        if (map.view.parent != null) map.moveTo(if (mapIsPrimary) primary else inset)
+        if (map.view.parent != null) map.moveTo(if (mapIsPrimary) mapPrimary else inset)
         if (::swapCatcher.isInitialized) {
             (swapCatcher.parent as? FrameLayout)?.removeView(swapCatcher)
             inset.addView(swapCatcher, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
@@ -240,21 +252,51 @@ class FlyActivity : Activity() {
         // No camera in this build (sim): no inset to swap with; the map takes the whole stage.
         inset.show(video.available)
         inset.bringToFront()
+        primary.show(video.available)
+        inset.background = android.graphics.drawable.GradientDrawable().apply {
+            setColor(Color.TRANSPARENT)
+            setStroke(dp(2), Color.WHITE)
+        }
         videoLabel.text = getString(video.labelRes)
         videoLabel.show(!video.available && !mapIsPrimary)
-        (warnings.layoutParams as FrameLayout.LayoutParams).topMargin = dp(8 + if (!mapIsPrimary) video.overlayTopDp else 0)
-        warnings.requestLayout()
+        warnings.layoutParams = (warnings.layoutParams as FrameLayout.LayoutParams).apply {
+            topMargin = dp(8 + if (!mapIsPrimary) video.overlayTopDp else 0)
+            // Reserve the left edge for DJI's take-off/RTH controls.
+            marginStart = dp(8 + if (!mapIsPrimary) video.overlayStartDp else 0)
+        }
         if (::hudBottom.isInitialized) layoutHud()
     }
 
     /** The telemetry strip sits to the right of the inset, or at the left edge without one. */
     private fun layoutHud() {
         val stage = findViewById<View>(R.id.stage)
-        val w = stage.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
+        if (stage.width <= 0 || stage.height <= 0) { stage.post { layoutHud() }; return }
+        val w = stage.width
         val insetW = (w * 0.3f).toInt().coerceIn(dp(150), dp(240))
         inset.layoutParams = (inset.layoutParams as FrameLayout.LayoutParams).apply { width = insetW; height = insetW * 10 / 16 }
-        (hudBottom.layoutParams as FrameLayout.LayoutParams).marginStart = if (video.available) insetW + dp(16) else dp(8)
-        hudBottom.requestLayout()
+        primary.layoutParams = FrameLayout.LayoutParams(
+            if (mapIsPrimary && video.available) insetW - dp(4) else ViewGroup.LayoutParams.MATCH_PARENT,
+            if (mapIsPrimary && video.available) insetW * 10 / 16 - dp(4) else ViewGroup.LayoutParams.MATCH_PARENT,
+            if (mapIsPrimary) Gravity.BOTTOM or Gravity.START else Gravity.TOP or Gravity.START,
+        ).apply { if (mapIsPrimary && video.available) { marginStart = dp(10); bottomMargin = dp(10) } }
+        // DJI widgets cache scaled child dimensions during measurement. Keep the SDK root at
+        // full stage size even inside the inset, and scale its picture instead of remeasuring it small.
+        val stageH = stage.height
+        cameraView.layoutParams = FrameLayout.LayoutParams(w, stageH)
+        val compact = mapIsPrimary && video.available
+        val previewW = insetW - dp(4)
+        val previewH = insetW * 10 / 16 - dp(4)
+        val scale = if (compact) minOf(previewW.toFloat() / w, previewH.toFloat() / stageH) else 1f
+        cameraView.pivotX = 0f
+        cameraView.pivotY = 0f
+        cameraView.scaleX = scale
+        cameraView.scaleY = scale
+        cameraView.translationX = if (compact) (previewW - w * scale) / 2 else 0f
+        cameraView.translationY = if (compact) (previewH - stageH * scale) / 2 else 0f
+        // Reassign so Android resolves the changed start margin even after the first layout.
+        hudBottom.layoutParams = (hudBottom.layoutParams as FrameLayout.LayoutParams).apply {
+            marginStart = if (video.available) insetW + dp(16) else dp(8)
+        }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -316,6 +358,11 @@ class FlyActivity : Activity() {
         showWarnings(adv)
         renderRail(f, m, p, adv)
         offerHandoff(f, p)
+        val panelOpen = video.panelOpen
+        warnings.show(!panelOpen)
+        inset.show(video.available && !panelOpen)
+        hudBottom.show(!panelOpen)
+        recenter.show(!panelOpen && mapIsPrimary && userMovedMap)
     }
 
     /** Terrain model: how far the ground under the aircraft is below its home point; null without a terrain file. */
@@ -549,7 +596,8 @@ class FlyActivity : Activity() {
             }
             r.addView(ActionButton(this).set(label, icon, Kind.SECONDARY).apply {
                 gravity = Gravity.CENTER_VERTICAL or Gravity.START
-                this.label.maxLines = 2
+                this.label.maxLines = 1
+                this.label.gravity = Gravity.START or Gravity.CENTER_VERTICAL
                 setOnClickListener { sheet.dismiss(); run() }
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f).apply { if (r.childCount > 0) marginStart = dp(8) })
         }
@@ -600,7 +648,8 @@ class FlyActivity : Activity() {
         if (f?.plan != null) {
             row(getString(R.string.fly_utm_row_declaration), f.declarationId?.take(13) ?: getString(R.string.fly_utm_declaration_not_yet))
             f.declarationPlan?.let { d ->
-                row(getString(R.string.fly_utm_row_window), getString(R.string.fly_utm_window_value, clock(d.startMs), clock(d.endMs)))
+                val t = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+                row(getString(R.string.fly_utm_row_window), getString(R.string.fly_utm_window_value, t.format(Date(d.startMs)), t.format(Date(d.endMs))))
                 row(getString(R.string.fly_utm_row_height_band), getString(R.string.fly_utm_height_band_value, d.minAltW84M, d.maxAltW84M))
             }
             f.altitudeReference?.let { row(getString(R.string.fly_utm_row_takeoff_height), getString(R.string.fly_utm_takeoff_height_value, it.ellipsoidM, it.sigmaM, altitudeSourceText(it.source))) }

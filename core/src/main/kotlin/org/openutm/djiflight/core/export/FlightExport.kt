@@ -20,6 +20,13 @@ import java.util.Locale
  * couldn't take (window expired, never declared). Altitudes: W84 = take-off reference + height.
  */
 object FlightExport {
+    fun fileName(f: FlightSnapshot, kind: String): String {
+        val siteOrDate = f.plan?.siteName?.trim()?.takeIf { it.isNotEmpty() }
+            ?.replace(Regex("[^A-Za-z0-9_-]"), "_")
+            ?: Rfc3339.format(f.plan?.plannedStartMs ?: f.lastEventAt).take(10)
+        return "flight-$siteOrDate-${f.flightId.take(8)}.${if (kind == "csv") "csv" else "geojson"}"
+    }
+
     fun geoJson(f: FlightSnapshot, samples: List<TelemetrySample>): String {
         val ref = f.altitudeReference
         val plan = f.plan

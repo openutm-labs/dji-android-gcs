@@ -16,7 +16,7 @@
         android:id="@+id/fpv_widget"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        custom:sourceCameraNameVisibility="true" />
+        custom:sourceCameraNameVisibility="false" />
 
     <dji.ux.widget.FPVOverlayWidget
         android:id="@+id/fpv_overlay_widget"
@@ -86,7 +86,7 @@
         android:layout_height="263dp"
         android:layout_below="@id/camera"
         android:layout_toStartOf="@id/CameraCapturePanel"
-        android:visibility="gone" />
+        android:visibility="invisible" />
 
     <dji.ux.panel.CameraSettingAdvancedPanel
         android:id="@+id/camera_setting_advanced_panel"
@@ -94,7 +94,7 @@
         android:layout_height="263dp"
         android:layout_below="@id/camera"
         android:layout_toStartOf="@id/CameraCapturePanel"
-        android:visibility="gone" />
+        android:visibility="invisible" />
 
     <dji.ux.panel.PreFlightCheckListPanel
         android:id="@+id/pre_flight_check_list"
@@ -102,5 +102,5 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/remaining_flight_time"
         custom:excludeItem="ESCStatus"
-        android:visibility="gone" />
+        android:visibility="invisible" />
 </RelativeLayout>

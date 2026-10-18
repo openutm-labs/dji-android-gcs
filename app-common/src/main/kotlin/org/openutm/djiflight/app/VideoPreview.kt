@@ -14,8 +14,13 @@ interface VideoPreview {
     val labelRes: Int
     fun createView(context: Context): View?
     fun setCompact(compact: Boolean) {}
+    /** Vendor panels temporarily own the stage; app overlays step aside. */
+    val panelOpen: Boolean get() = false
+    fun onPanelVisibilityChanged(listener: (Boolean) -> Unit) {}
     /** Space the camera view's own top widgets take while full size; the app's warnings sit below it. */
     val overlayTopDp: Int get() = 0
+    /** Left edge reserved for vendor flight controls. */
+    val overlayStartDp: Int get() = 0
     fun onResume() {}
     fun onPause() {}
     /** After a reconnect (battery swap). */

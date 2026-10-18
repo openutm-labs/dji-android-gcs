@@ -24,6 +24,19 @@ class FakeSetupAndPacingTest {
     private fun reached(events: List<MissionEvent>) = events.filterIsInstance<MissionEvent.Progress>().count { it.reached }
 
     @Test
+    fun `reopening setup refreshes the read time without changing settings`() = runTest {
+        var now = 1_000L
+        val setup = FakeAircraftSetup(backgroundScope, writeDelayMs = 10, nowMs = { now })
+        val original = setup.status.value.settings
+        assertTrue(setup.refresh().isSuccess)
+        assertEquals(1_000L, setup.status.value.readAtMs)
+        now += 6 * 60_000
+        assertTrue(setup.refresh().isSuccess)
+        assertEquals(361_000L, setup.status.value.readAtMs)
+        assertEquals(original, setup.status.value.settings)
+    }
+
+    @Test
     fun `without a pace the whole route is reported at once, as the tests expect`() = runTest {
         val op = FakeMissionOperator()
         val events = mutableListOf<MissionEvent>()

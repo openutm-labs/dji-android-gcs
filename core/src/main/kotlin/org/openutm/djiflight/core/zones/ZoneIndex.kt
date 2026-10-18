@@ -28,6 +28,16 @@ data class Zone(
 
 data class ZoneHit(val zone: Zone, val distanceM: Double)
 
+data class ZoneSummary(val name: String, val source: String, val categories: Set<String>) {
+    companion object {
+        fun of(zones: List<Zone>): List<ZoneSummary> = zones.groupBy { it.name.trim() to it.source }.map { (key, entries) ->
+            ZoneSummary(key.first, key.second, entries.flatMap { z ->
+                listOfNotNull(z.category?.takeUnless { it == "UNKNOWN" }, "ALTITUDE".takeIf { z.upperM != null && z.upperM > 0 })
+            }.toSortedSet())
+        }
+    }
+}
+
 /**
  * Cached restriction zones, checked on the device with no network.
  * Warnings only: v4 has no custom-geofence API, so DJI's own GEO system is the only enforcement.

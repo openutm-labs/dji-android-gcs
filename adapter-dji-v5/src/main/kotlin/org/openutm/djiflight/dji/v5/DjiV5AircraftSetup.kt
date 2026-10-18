@@ -5,6 +5,7 @@ import dji.sdk.keyvalue.key.DJIKeyInfo
 import dji.sdk.keyvalue.key.FlightControllerKey
 import dji.sdk.keyvalue.key.GimbalKey
 import dji.sdk.keyvalue.key.KeyTools
+import dji.sdk.keyvalue.key.ProductKey
 import dji.sdk.keyvalue.value.common.ComponentIndexType
 import dji.sdk.keyvalue.value.common.EmptyMsg
 import dji.sdk.keyvalue.value.flightcontroller.CompassCalibrationState
@@ -35,6 +36,8 @@ import org.openutm.djiflight.core.adapter.AircraftSetup
 import org.openutm.djiflight.core.adapter.AircraftStatus
 import org.openutm.djiflight.core.adapter.Calibration
 import org.openutm.djiflight.core.adapter.CalibrationProgress
+import org.openutm.djiflight.core.adapter.CompassHealth
+import org.openutm.djiflight.core.adapter.ObstacleSensing
 import org.openutm.djiflight.core.adapter.Health
 import org.openutm.djiflight.core.adapter.RcLostAction
 import org.openutm.djiflight.core.adapter.SensorStatus
@@ -73,16 +76,18 @@ class DjiV5AircraftSetup(
             obstacleAvoidance = obstacleAvoidance().marks(SetupItem.OBSTACLE_AVOIDANCE),
         )
         val compassError = get(FlightControllerKey.KeyCompassHasError)
+        val compassStates = get(FlightControllerKey.KeyCompassState)
+        val compassCalibrating = get(FlightControllerKey.KeyIsCompassCalibrating) == true
         val imu = get(FlightControllerKey.KeyIMUStatus)
         val gimbal = get(GimbalKey.KeyGimbalCalibrationStatus, ComponentIndexType.LEFT_OR_MAIN)
-        if (compassError != null) supports += SetupItem.COMPASS
+        if (compassError != null || compassStates != null) supports += SetupItem.COMPASS
         if (imu != null) supports += SetupItem.IMU
         if (gimbal != null) supports += SetupItem.GIMBAL
         supports += SetupItem.HOME_RESET
         _status.update {
             it.copy(
                 settings = settings,
-                compass = when (compassError) { true -> SensorStatus(Health.ERROR, "Needs calibration"); false -> SensorStatus(Health.OK, "Normal"); null -> SensorStatus() },
+                compass = CompassHealth.status(compassStates.orEmpty().mapNotNull { it.compassSensorState?.name }, compassError, compassCalibrating),
                 imu = imuStatus(imu),
                 gimbal = when (gimbal?.status) {
                     GimbalCalibrationState.IN_PROGRESS -> SensorStatus(Health.WARNING, "Calibrating")
@@ -107,7 +112,9 @@ class DjiV5AircraftSetup(
             is SettingChange.RcLost -> put(FlightControllerKey.KeyFailsafeAction, toDji(change.action))
             is SettingChange.LowBattery -> put(FlightControllerKey.KeyLowBatteryWarningThreshold, change.percent)
             is SettingChange.CriticalBattery -> put(FlightControllerKey.KeySeriousLowBatteryWarningThreshold, change.percent)
-            is SettingChange.ObstacleAvoidance -> done { cb -> PerceptionManager.getInstance().setOverallObstacleAvoidanceEnabled(change.enabled, cb) }
+            is SettingChange.ObstacleAvoidance -> if (ObstacleSensing.supportsV5(get(ProductKey.KeyProductType)?.name)) {
+                done { cb -> PerceptionManager.getInstance().setOverallObstacleAvoidanceEnabled(change.enabled, cb) }
+            } else Result.failure(IllegalStateException("no obstacle sensing on this aircraft"))
         }
         r.onFailure { e -> log("setting $change refused: ${e.message}"); _status.update { it.copy(error = e.message) } }
         refresh()
@@ -203,7 +210,12 @@ class DjiV5AircraftSetup(
         return Result.failure(IllegalStateException(msg))
     }
 
-    private suspend fun obstacleAvoidance(): Boolean? = withTimeoutOrNull(5_000) {
+    private suspend fun obstacleAvoidance(): Boolean? {
+        if (!ObstacleSensing.supportsV5(get(ProductKey.KeyProductType)?.name)) return null
+        return readObstacleAvoidance()
+    }
+
+    private suspend fun readObstacleAvoidance(): Boolean? = withTimeoutOrNull(5_000) {
         suspendCancellableCoroutine<Boolean?> { cont ->
             runCatching {
                 PerceptionManager.getInstance().getOverallObstacleAvoidanceEnabled(object : CommonCallbacks.CompletionCallbackWithParam<Boolean> {

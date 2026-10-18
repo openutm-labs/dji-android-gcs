@@ -69,6 +69,7 @@ class PreflightPanel(private val activity: Activity, private val graph: AppGraph
     private val settingsBox = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
     private val settingsNote = activity.text(14f, R.color.text3)
     private var rows: SettingRows? = null
+    private var displayedReadAtMs: Long? = null
 
     fun show() {
         val cols = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL }
@@ -348,8 +349,8 @@ class PreflightPanel(private val activity: Activity, private val graph: AppGraph
 
     private fun health(s: SensorStatus): Pair<String, Pill.Tone> = when (s.health) {
         Health.OK -> activity.getString(R.string.preflight_pill_ok) to Pill.Tone.OK
-        Health.WARNING -> (s.detail ?: activity.getString(R.string.preflight_pill_check)) to Pill.Tone.WARN
-        Health.ERROR -> (s.detail ?: activity.getString(R.string.preflight_pill_error)) to Pill.Tone.CRIT
+        Health.WARNING -> activity.getString(R.string.preflight_pill_check) to Pill.Tone.WARN
+        Health.ERROR -> activity.getString(R.string.preflight_pill_error) to Pill.Tone.CRIT
         Health.UNKNOWN -> activity.getString(R.string.preflight_no_value) to Pill.Tone.NEUTRAL
     }
 
@@ -390,9 +391,9 @@ class PreflightPanel(private val activity: Activity, private val graph: AppGraph
         row("Home point", activity.getString(if (d?.home?.isValid == true) R.string.preflight_home_recorded else R.string.preflight_home_not_recorded),
             if (d?.home?.isValid == true) activity.getString(R.string.preflight_pill_set) to Pill.Tone.OK else none to Pill.Tone.NEUTRAL,
             actionEnabled = connected && SetupItem.HOME_RESET in supports && d?.isFlying != true, visible = connected)
-        row("Compass", a?.compass?.detail ?: none, a?.compass?.let(::health), connected && SetupItem.COMPASS in supports && idle, visible = SetupItem.COMPASS in supports)
-        row("IMU", a?.imu?.detail ?: none, a?.imu?.let(::health), connected && SetupItem.IMU in supports && idle, visible = SetupItem.IMU in supports)
-        row("Gimbal", a?.gimbal?.detail ?: none, a?.gimbal?.let(::health), connected && SetupItem.GIMBAL in supports && idle, visible = SetupItem.GIMBAL in supports)
+        row("Compass", a?.compass?.let(::sensorText) ?: none, a?.compass?.let(::health), connected && SetupItem.COMPASS in supports && idle, visible = SetupItem.COMPASS in supports)
+        row("IMU", a?.imu?.let(::sensorText) ?: none, a?.imu?.let(::health), connected && SetupItem.IMU in supports && idle, visible = SetupItem.IMU in supports)
+        row("Gimbal", a?.gimbal?.let(::sensorText) ?: none, a?.gimbal?.let(::health), connected && SetupItem.GIMBAL in supports && idle, visible = SetupItem.GIMBAL in supports)
 
         val c = a?.calibration
         calibrationBox.show(c != null)
@@ -465,7 +466,9 @@ class PreflightPanel(private val activity: Activity, private val graph: AppGraph
                 ).map { (act, label) ->
                     act to ActionButton(activity).set(label, null, Kind.SECONDARY).also { b ->
                         b.setPadding(activity.dp(4), b.paddingTop, activity.dp(4), b.paddingBottom)
+                        b.fitLabel = false
                         b.label.textSize = 15f
+                        b.label.maxLines = 2
                         b.setOnClickListener { write(SetupItem.RC_LOST_ACTION, SettingChange.RcLost(act)) }
                         seg.addView(b, LinearLayout.LayoutParams(0, activity.dp(48), 1f).apply { if (seg.childCount > 0) marginStart = activity.dp(6) })
                     }
@@ -550,6 +553,12 @@ class PreflightPanel(private val activity: Activity, private val graph: AppGraph
         }
     }
 
+    private fun sensorText(s: SensorStatus): String? = when (s.detail) {
+        "Abnormal" -> activity.getString(R.string.preflight_sensor_abnormal)
+        "Magnetic interference" -> activity.getString(R.string.preflight_sensor_interference)
+        else -> s.detail
+    }
+
     private fun renderSettings(a: AircraftStatus?) {
         val connected = graph.service.status.value.link is LinkState.Connected
         if (a == null || !connected) {
@@ -562,8 +571,9 @@ class PreflightPanel(private val activity: Activity, private val graph: AppGraph
         val reading = activity.getString(R.string.preflight_settings_reading)
         if (a.readAtMs == null && a.supports.isEmpty()) { settingsNote.setIfChanged(reading); return }
         val r = rows ?: SettingRows(a).also { rows = it; settingsBox.removeAllViews(); settingsBox.addView(it.box) }
-        // Replaces only the waiting notes (compared as shown, so it holds in every language).
-        if (settingsNote.text.isNullOrEmpty() || settingsNote.text.startsWith(reading) || settingsNote.text.startsWith(activity.getString(R.string.preflight_settings_connect))) {
+        // A completed read must replace the cached timestamp shown while refresh was running.
+        if (r.pending.isEmpty() && (a.readAtMs != displayedReadAtMs || settingsNote.text.isNullOrEmpty() || settingsNote.text.startsWith(reading) || settingsNote.text.startsWith(activity.getString(R.string.preflight_settings_connect)))) {
+            displayedReadAtMs = a.readAtMs
             settingsNote.setIfChanged(a.readAtMs?.let { activity.getString(R.string.preflight_settings_read_at, DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(it))) } ?: "")
         }
         a.error?.let { if (r.pending.isEmpty()) settingsNote.setIfChanged(activity.getString(R.string.preflight_aircraft_says, it)) }

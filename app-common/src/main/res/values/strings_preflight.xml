@@ -144,4 +144,6 @@
     <string name="signin_signed_in">Signed in: %1$s</string>
     <string name="signin_not_accepted">Sign-in not accepted: %1$s</string>
     <string name="signin_close">Close</string>
+    <string name="preflight_sensor_abnormal">Abnormal</string>
+    <string name="preflight_sensor_interference">Magnetic interference</string>
 </resources>

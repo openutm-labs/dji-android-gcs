@@ -101,7 +101,8 @@ class Stepper(
     private fun typeValue() {
         val input = EditText(activity).apply {
             inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL or (if (min < 0) InputType.TYPE_NUMBER_FLAG_SIGNED else 0)
-            setText(format(value).takeWhile { it.isDigit() || it == '.' || it == '-' || it == '−' }.replace('−', '-'))
+            // Use the numeric value, not a localized label that may contain units or a decimal comma.
+            setText(value.toString())
             setTextColor(activity.color(R.color.text))
             textSize = 22f
             selectAll()

@@ -25,7 +25,7 @@ import org.openutm.djiflight.core.adapter.SetupItem
  * defaults, writes that take a moment and are range-checked as the SDKs do, and calibrations that
  * step through the same stages as a real compass or IMU calibration.
  */
-class FakeAircraftSetup(private val scope: CoroutineScope, private val writeDelayMs: Long = 300, private val stepMs: Long = 2_500) : AircraftSetup {
+class FakeAircraftSetup(private val scope: CoroutineScope, private val writeDelayMs: Long = 300, private val stepMs: Long = 2_500, private val nowMs: () -> Long = System::currentTimeMillis) : AircraftSetup {
     private val _status = MutableStateFlow(
         AircraftStatus(
             settings = AircraftSettings(
@@ -43,7 +43,7 @@ class FakeAircraftSetup(private val scope: CoroutineScope, private val writeDela
 
     override suspend fun refresh(): Result<Unit> {
         delay(writeDelayMs)
-        _status.update { it.copy(readAtMs = System.currentTimeMillis(), error = null) }
+        _status.update { it.copy(readAtMs = nowMs(), error = null) }
         return Result.success(Unit)
     }
 
