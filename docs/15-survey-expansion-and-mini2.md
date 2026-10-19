@@ -131,6 +131,20 @@ Android replay smoke checks opened corridor and surround routes and the saved-pl
 
 **Physical status:** no aircraft has been flown or given flight-control commands during this implementation. The owner currently cannot remove propellers. Any available connected bench check is therefore restricted to read-only connection, telemetry, model/firmware and SDK key availability. SDK simulation, authority acquisition, motors, camera writes and automatic navigation remain outside that check. Mini 2 release execution stays disabled.
 
-On 19 October 2026, wireless ADB successfully updated a OnePlus Nord CE (EB2101) from 0.4.0/code 4 to the ordinary DJI v4 APK 0.5.0/code 5. Android confirmed installation and launch of `Mini2BenchActivity`; its report confirmed `experimental executor: false` and the read-only session with simulator changes disabled. The first report had no connected aircraft, so model/firmware, camera capability, GPS, stick values and RTH/failsafe keys were unavailable. Wireless ADB disappeared again before those connected readings could be captured. **Installation and the disabled-mode check passed; controller/aircraft readings remain pending.**
+On 19 October 2026, wireless ADB successfully updated a OnePlus Nord CE (EB2101, Android 13) from 0.4.0/code 4 to the ordinary DJI v4 APK 0.5.0/code 5. Android confirmed installation and launch of `Mini2BenchActivity`; its report confirmed `experimental executor: false` and the read-only session with simulator changes disabled. After reconnecting the controller and recovering wireless ADB, the connected report showed:
+
+| Read-only observation | Result |
+|---|---|
+| Aircraft / firmware | DJI Mini 2 / 01.07.0200 |
+| Mapping camera | DJI Mini 2 4:3 |
+| Mission support in ordinary build | NONE, as intended |
+| Flying / motors on | false / false |
+| SDK simulator active | false |
+| GPS signal | LEVEL_0 at the bench; no GPS flight readiness established |
+| Left / right stick horizontal and vertical values | 0, 0 / 0, 0 |
+| Virtual Stick enabled / available | false / false in this grounded state; this is not a support or authority test |
+| RTH height / RC-loss action | 60 m / GO_HOME; read only, unchanged |
+
+**Installation, disabled-mode behaviour and these connected reads passed.** A private screenshot confirmed the simulator controls were hidden. Callback freshness/rate, capture, command axes, authority acquisition/release, override and failsafe behaviour remain untested on hardware. No simulator, motor, flight, camera or settings commands were issued. The debug bench header was subsequently clarified to distinguish read-only checks from props-off simulator testing; this copy-only change does not require another installation for the recorded check.
 
 Installed APK SHA-256: `005e30b430a0b1a689d4e33a68042b9f05b21366936d226e9d0cd392a70500a5`. Diagnostic logs and phone screenshots are not committed.

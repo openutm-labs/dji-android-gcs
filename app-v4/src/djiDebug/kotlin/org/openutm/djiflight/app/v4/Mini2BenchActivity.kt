@@ -41,7 +41,8 @@ class Mini2BenchActivity : Activity() {
         (application as FlightApp).graph.adapter.start()
         val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(24,24,24,24) }
         body.addView(TextView(this).apply {
-            text = "Mini 2 developer bench\n\nKeep propellers removed throughout testing. This screen does not take off, arm motors or fly a mission. Simulator acknowledgement is separate from flight qualification. Starting simulation requires local development setup; stop it before changing setup."
+            text = if (allowSimulator) "Mini 2 SDK simulator bench\n\nKeep propellers removed throughout simulator testing. This screen does not take off, arm motors or fly a mission. Simulator acknowledgement is separate from flight qualification. Starting simulation requires local development setup; stop it before changing setup."
+                else "Mini 2 read-only bench\n\nKeep the aircraft grounded and the controller sticks neutral. This screen only reads status. Simulator controls are hidden. It sends no flight, motor, camera or settings commands."
             textSize = 18f
         })
         status = TextView(this).apply { textSize = 15f; setPadding(0,24,0,24) }
