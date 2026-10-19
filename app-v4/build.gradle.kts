@@ -22,8 +22,8 @@ android {
         // MSDK v4.18: minSdk 23, targetSdk 34, 32- and 64-bit ARM. Not eligible for Google Play (4 KB pages).
         minSdk = 23
         targetSdk = 34
-        versionCode = 9
-        versionName = "0.6.0"
+        versionCode = 10
+        versionName = "0.6.1"
         multiDexEnabled = true
         testInstrumentationRunner = "org.openutm.djiflight.test.PanamaSetupSmoke"
         buildConfigField("String", "DEV_BLENDER_URL", "\"$devBlenderUrl\"")

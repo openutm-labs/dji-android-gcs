@@ -2,6 +2,14 @@
 
 Changes to preview APK builds, newest first. Current setup instructions and qualification limits are in the [distribution guide](docs/17-panama-apk-distribution.md).
 
+## 0.6.1 — 2026-10-20
+
+### Fixed
+
+- DJI v4 aircraft status uses the panel's full width instead of a narrow, text-shrinking list. Rows have a minimum 48 dp height, scroll within the available screen and include an explicit Close button.
+- The top-bar status entry opens its panel directly, avoiding dependence on the SDK popup event subscription after restart.
+- The status panel grows up to 640 dp (with additional width for larger system fonts), bounded by the camera stage. DJI's status data, excluded rows and aircraft actions remain bound to the original SDK views.
+
 ## 0.6.0 — 2026-10-20
 
 ### Added

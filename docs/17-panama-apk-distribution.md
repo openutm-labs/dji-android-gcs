@@ -1,13 +1,13 @@
-# Panama APK distribution — 0.6.0
+# Panama APK distribution — 0.6.1
 
 These signed preview installers select Panama on first launch. They contain the public Flight Blender and Passport addresses, with no operator account, pilot identity, aircraft serial, OAuth client secret or access token bundled into the app.
 
 ## Choose the installer
 
-- **OpenUTM-Panama-v4-0.6.0.apk:** the DJI v4 app, including the Mini 2. Android 6 or later; ARM 32/64-bit.
-- **OpenUTM-Panama-v5-0.6.0.apk:** the DJI v5 app for compatible enterprise equipment. Android 7 or later; ARM64. The coordinator must confirm the aircraft/controller combination before use.
+- **OpenUTM-Panama-v4-0.6.1.apk:** the DJI v4 app, including the Mini 2. Android 6 or later; ARM 32/64-bit.
+- **OpenUTM-Panama-v5-0.6.1.apk:** the DJI v5 app for compatible enterprise equipment. Android 7 or later; ARM64. The coordinator must confirm the aircraft/controller combination before use.
 
-Use 0.6.0 for distribution. It adds default OpenStreetMap street maps and retains the QR and camera-panel fixes. Install it over a release-signed 0.5.x APK to retain device data.
+Use 0.6.1 for distribution. It includes default OpenStreetMap street maps, a readable scrolling aircraft-status panel, and the QR and camera-panel fixes. Install it over a release-signed 0.5.x APK to retain device data.
 
 These are two separate apps. Install the one for the operator's equipment. They are not installers for every DJI controller. Do not include the simulator or the Android test APK in an operator download.
 
@@ -21,6 +21,8 @@ These are two separate apps. Install the one for the operator's equipment. They 
 6. Select **Connect to Panama**. The app checks token retrieval and a protected server read before saving the setup. A failed check leaves the form open. It does not create a declaration.
 7. With internet access, street maps load automatically in Fly and Plan. In **Device setup → Maps**, keep **Automatic** or select **Online street maps**. Before operating without internet, import approved offline packs for your area and select **Offline packs only**. Online streets do not include satellite imagery or terrain heights. See the [map guide](18-default-maps.md).
 8. Connect the controller and grounded aircraft. In **Plan**, review the pilot, aircraft, location, height and time. **Save and declare** creates a new declaration on Panama. Check its acknowledgement before operations.
+
+Tap the aircraft status at the top of Fly to review **Aircraft status**. Scroll down for more rows and select **Close** to return to the camera/map.
 
 Contact the coordinator to request access. A website login alone does not supply the device's credentials. Do not distribute an operator's setup file, QR code or client secret alongside a shared APK. Store completed setup files privately and remove the transfer copy after importing.
 
@@ -53,6 +55,8 @@ The APKs are signed with the locally held OpenUTM release certificate. An instal
 6. Pulse **Connect to Panama**. La aplicación comprueba el acceso antes de guardar. Este paso no crea una declaración de vuelo.
 7. Con internet, los mapas de calles se cargan automáticamente. En **Device setup → Maps**, mantenga **Automatic** o elija **Online street maps**. Para trabajar sin internet, importe los paquetes de su zona y seleccione **Offline packs only**. Los mapas de calles no incluyen imágenes satelitales ni alturas del terreno.
 8. Conecte el controlador y la aeronave en tierra. En **Plan**, revise el piloto, la aeronave, la zona, la altura y el horario. Pulse **Save and declare** y compruebe la respuesta del servidor.
+
+Para revisar el estado de la aeronave, pulse su indicador en la parte superior de **Fly**. Desplace la lista verticalmente y pulse **Close** para volver.
 
 Solicite el acceso a su coordinador. No comparta archivos de configuración, códigos QR ni secretos del cliente junto con un APK de distribución general. Las misiones automáticas del Mini 2 siguen deshabilitadas en esta versión. Una declaración aceptada no autoriza por sí sola un vuelo.
 
@@ -96,3 +100,6 @@ The v5 build retains vendor warnings about optional Java KML helpers referencing
 For **0.6.0/code 9**, 156 tests passed: 139 core, 12 replay/Blender integration and 5 map-source/HTTP-cache tests. Both signed aircraft releases and the simulator debug build completed; shared debug, v4 release and v5 release lint completed without errors. Map HTTP tests use loopback fixtures and do not contact the public tile service. Both release certificates, version/minimum-Android metadata and packaged content were verified; private credentials and personal setup are excluded.
 
 On the physical OnePlus, the v4 release updated 0.5.3 in place. The normal visible map loaded OSM roads and labels, with the phone's position overlay and readable attribution in the inset and expanded map. Selecting Offline packs only with no files showed the missing-map message; tapping it opened Maps setup. Restoring Automatic restored streets, position and credits. No crash entry was recorded for the current app process. The original screen timeout and USB stay-awake settings remained unchanged. The phone is still unprovisioned for Flight Blender; no interactive Plan declaration workflow or v5 aircraft was qualified in these map checks. No aircraft-control commands or production declaration/telemetry writes were issued.
+
+
+For **0.6.1/code 10**, both signed releases built and v4/v5 release lint passed. The change is in the v4 aircraft-status layout; v5 retains the same map functionality with a matching distribution version. On the OnePlus, the actual top-bar status entry opened the SDK checklist after the update. The list filled 1,894 physical pixels instead of 804, and Overall Status text occupied 63 pixels vertically instead of 26. Rows had a 48 dp minimum height, the list scrolled to the bottom, and Close restored the camera/map. Opening status while the map was primary expanded the camera host and kept the panel readable. No SDK action rows, calibration buttons, flight settings or flight controls were activated. These checks do not qualify aircraft operation or connected-aircraft status data.

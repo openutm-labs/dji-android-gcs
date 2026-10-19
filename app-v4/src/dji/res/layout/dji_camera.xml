@@ -3,7 +3,7 @@
   The aircraft camera area on the Fly screen (dji build only), built from DJI's UI Library v4.
   Layout, sizes and the panel ids follow DJI's own sample (Mobile-UXSDK-Android, activity_default_widgets.xml):
   the widgets find camera_setting_*_panel, pre_flight_check_list and CameraCapturePanel by these ids.
-  Its MapWidget is left out: the app's map is the offline MapLibre one.
+  Its MapWidget is left out: the app uses MapLibre for online streets and offline packs.
 -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:custom="http://schemas.android.com/apk/res-auto"
@@ -98,8 +98,8 @@
 
     <dji.ux.panel.PreFlightCheckListPanel
         android:id="@+id/pre_flight_check_list"
-        android:layout_width="400dp"
-        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:layout_below="@id/remaining_flight_time"
         custom:excludeItem="ESCStatus"
         android:visibility="invisible" />

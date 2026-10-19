@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aircraft_status_title">Aircraft status</string>
+    <string name="aircraft_status_close">Close</string>
+    <string name="aircraft_status_close_description">Close aircraft status</string>
+    <item name="aircraftStatusClose" type="id" />
+</resources>
