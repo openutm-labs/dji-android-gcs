@@ -156,12 +156,23 @@ class AppGraph(private val app: Application, val platform: Platform) {
         imagery = ImageryService("DroneDeploy", project = "Dev test project"),
     )
 
-    private fun applyProvisioning(p: DeviceProvisioning) {
+    /** Read-only credential check for manual setup; does not replace the active server. */
+    suspend fun checkProvisioning(p: DeviceProvisioning): org.openutm.djiflight.core.sync.BackendResult<Unit> {
+        val problems = p.problems(allowDevAuth = platform.debug)
+        if (problems.isNotEmpty()) return org.openutm.djiflight.core.sync.BackendResult.Rejected(400, problems.joinToString("; "))
+        return configuredBackend(p).checkConnection()
+    }
+
+    private fun configuredBackend(p: DeviceProvisioning): BlenderBackend {
         val tokens = when (val a = p.auth) {
             AuthConfig.Dev -> DevTokenProvider(clock)
             is AuthConfig.ClientCredentials -> ClientCredentialsTokenProvider(transport, a.tokenUrl, a.clientId, a.clientSecret, a.scope, a.audience, clock)
         }
-        backend.target = BlenderBackend(p.blenderUrl, tokens, transport, submittedBy = "${p.operatorId}/${p.deviceName}")
+        return BlenderBackend(p.blenderUrl, tokens, transport, submittedBy = "${p.operatorId}/${p.deviceName}")
+    }
+
+    private fun applyProvisioning(p: DeviceProvisioning) {
+        backend.target = configuredBackend(p)
         zones.backendChanged()
         // A sign-in from another identity server (or none configured now) no longer says who flies.
         pilots.current.value?.let { s -> if (s.issuer.trimEnd('/') != p.pilotLogin?.issuer?.trimEnd('/')) pilots.signOut() }

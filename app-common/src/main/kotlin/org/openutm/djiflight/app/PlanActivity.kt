@@ -197,6 +197,7 @@ class PlanActivity : Activity() {
         buildMapTools()
         buildPanel(p.legalMaxHeightM)
 
+        ui.launch { graph.maps.version.collect { map.reloadStyle() } }
         startMs = graph.clock.nowMs()
         showKind(false)
         ui.launch {
@@ -241,6 +242,11 @@ class PlanActivity : Activity() {
     private fun buildMapTools() {
         mapHint = findViewById(R.id.mapHint)
         mapHint.background = rounded(color(R.color.scrim), dp(8).toFloat())
+        mapHint.setOnClickListener {
+            if (!graph.maps.basemap.isFile && !graph.maps.imagery.isFile) {
+                startActivity(Intent(this, SetupActivity::class.java).putExtra("section", "maps"))
+            }
+        }
         val tools = findViewById<LinearLayout>(R.id.mapTools)
         undoButton = ActionButton(this).set(getString(R.string.plan_undo), R.drawable.ic_undo, Kind.SECONDARY).apply {
             background = rounded(color(R.color.scrim), dp(8).toFloat())
@@ -711,8 +717,11 @@ class PlanActivity : Activity() {
         map.setPilot(graph.deviceFix.value?.let { LatLng(it.lat, it.lng) })
         if (!fitted && map.ready) (area ?: (survey.takeIf { it.size >= 2 }) ?: center?.let { listOf(it) })?.let { map.fit(it, dp(40), dp(64), dp(40), dp(80)); fitted = true }
 
+        val mapMissing = !graph.maps.basemap.isFile && !graph.maps.imagery.isFile
+        mapHint.isClickable = mapMissing
         mapHint.setIfChanged(
             when {
+                mapMissing -> getString(R.string.plan_hint_map_missing)
                 !mission -> if (boundary != null) getString(R.string.plan_hint_imported, boundaryName ?: getString(R.string.plan_hint_imported_fallback)) else getString(R.string.plan_hint_move_takeoff)
                 pattern == SurveyPattern.CORRIDOR && survey.size < 2 -> getString(R.string.plan_corridor_add_point)
                 pattern == SurveyPattern.CORRIDOR -> getString(R.string.plan_hint_drag_corner)

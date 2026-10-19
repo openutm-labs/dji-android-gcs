@@ -2,6 +2,7 @@
 <!-- Plan screen (PlanActivity). -->
 <resources>
     <!-- Top bar and map tools -->
+    <string name="plan_hint_map_missing">No offline map installed. Tap to import.</string>
     <string name="plan_title">Plan a flight</string>
     <string name="plan_tab_manual">Manual flight</string>
     <string name="plan_tab_manual_short">Manual</string>

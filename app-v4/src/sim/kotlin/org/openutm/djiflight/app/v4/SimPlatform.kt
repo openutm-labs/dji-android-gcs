@@ -22,6 +22,7 @@ object SimPlatform : Platform {
     const val GROUND_LEAD_MS = 60_000L
 
     override val label = "sim"
+    override val isSimulation = true
     override val versionCode = BuildConfig.VERSION_CODE
     override val versionName: String = BuildConfig.VERSION_NAME
     override val debug = BuildConfig.DEBUG

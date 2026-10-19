@@ -15,15 +15,17 @@ val devBlenderUrl: String = prop("BLENDER_URL") ?: "http://10.0.2.2:8000"
 android {
     namespace = "org.openutm.djiflight.app.v4"
     compileSdk = 34
+    if (providers.gradleProperty("openutm.releaseSmoke").orNull == "true") testBuildType = "release"
 
     defaultConfig {
         applicationId = "org.openutm.djiflight.v4"
         // MSDK v4.18: minSdk 23, targetSdk 34, 32- and 64-bit ARM. Not eligible for Google Play (4 KB pages).
         minSdk = 23
         targetSdk = 34
-        versionCode = 5
-        versionName = "0.5.0"
+        versionCode = 6
+        versionName = "0.5.1"
         multiDexEnabled = true
+        testInstrumentationRunner = "org.openutm.djiflight.test.PanamaSetupSmoke"
         buildConfigField("String", "DEV_BLENDER_URL", "\"$devBlenderUrl\"")
     }
 
