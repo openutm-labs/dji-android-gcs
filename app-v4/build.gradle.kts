@@ -15,15 +15,17 @@ val devBlenderUrl: String = prop("BLENDER_URL") ?: "http://10.0.2.2:8000"
 android {
     namespace = "org.openutm.djiflight.app.v4"
     compileSdk = 34
+    if (providers.gradleProperty("openutm.releaseSmoke").orNull == "true") testBuildType = "release"
 
     defaultConfig {
         applicationId = "org.openutm.djiflight.v4"
         // MSDK v4.18: minSdk 23, targetSdk 34, 32- and 64-bit ARM. Not eligible for Google Play (4 KB pages).
         minSdk = 23
         targetSdk = 34
-        versionCode = 4
-        versionName = "0.4.0"
+        versionCode = 8
+        versionName = "0.5.3"
         multiDexEnabled = true
+        testInstrumentationRunner = "org.openutm.djiflight.test.PanamaSetupSmoke"
         buildConfigField("String", "DEV_BLENDER_URL", "\"$devBlenderUrl\"")
     }
 
@@ -61,8 +63,10 @@ android {
         // (right to left), to check every screen with translated-length text.
         debug {
             isPseudoLocalesEnabled = true
+            buildConfigField("boolean", "MINI2_SURVEY_EXPERIMENTAL", ((findProperty("openutm.experimentalMini2") as String?) == "true").toString())
         }
         release {
+            buildConfigField("boolean", "MINI2_SURVEY_EXPERIMENTAL", "false")
             isMinifyEnabled = true
             isShrinkResources = true
             // proguard-rules.pro carries DJI's own 4.18 keep rules (from its sample app) and ours.

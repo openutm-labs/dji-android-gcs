@@ -1,0 +1,44 @@
+<resources>
+    <string name="plan_pattern_five">Five-direction</string>
+    <string name="plan_pattern_corridor">Corridor</string>
+    <string name="plan_pattern_surround">Layered surround</string>
+    <string name="plan_pattern_five_hint">One nadir pass and four fixed-heading oblique passes. GSD is a nadir estimate; inspect the full route and validate image coverage before survey use.</string>
+    <string name="plan_pattern_corridor_hint">Tap centreline points or import a KML LineString. Parallel strips follow the bends; sharp turns must be split. Review connectors and clearance.</string>
+    <string name="plan_pattern_surround_hint">Draw the building footprint. Circular layers face its centre. Width sets clearance outside the footprint; this is not obstacle sensing or a facade model.</string>
+    <string name="plan_route_width">Width / stand-off</string>
+    <string name="plan_route_width_hint">Full corridor width, or surround distance outside the footprint.</string>
+    <string name="plan_orbit_top">Top layer altitude</string>
+    <string name="plan_orbit_layer">Layer spacing</string>
+    <string name="plan_save_draft">Save plan</string>
+    <string name="plan_open_draft">Saved plans</string>
+    <string name="plan_draft_name">Plan name</string>
+    <string name="plan_draft_failed">Could not save or read this plan.</string>
+    <string name="plan_drafts_empty">No saved plans yet. Draw an area or corridor and choose Save plan. Saved plans contain location data; keep this device secure.</string>
+    <string name="plan_delete_draft_question">Delete this saved plan? Flight records are kept separately.</string>
+    <string name="plan_kml_no_line">Choose a KML/KMZ containing a LineString for the corridor centreline.</string>
+    <string name="network_status_title">OpenUTM network reporting</string>
+    <string name="network_status_note">This reports connection and upload state. It does not verify Broadcast Remote ID or grant permission to fly. Offline samples remain on this device until uploaded within the declaration window.</string>
+    <string name="network_status_connection">Internet</string>
+    <string name="network_status_online">Available</string>
+    <string name="network_status_offline">Offline — live reporting unavailable</string>
+    <string name="network_status_aircraft">Aircraft telemetry</string>
+    <string name="network_status_fresh">Receiving recent telemetry</string>
+    <string name="network_status_stale">No recent aircraft telemetry</string>
+    <string name="network_status_declaration">Declaration</string>
+    <string name="network_status_declared">Accepted by Flight Blender</string>
+    <string name="network_status_not_declared">No accepted declaration</string>
+    <string name="network_status_pending">Samples waiting for this flight</string>
+    <string name="mini2_experimental_notice" formatted="false">Experimental Mini 2 survey control. Take off manually first, use an open supervised test area, and keep the app connected. Stop or move a physical stick to take control. Limits: 3 m/s, 200 m radius, 25% battery reserve. No obstacle avoidance is provided. Not field qualified.</string>
+    <string name="fly_go_hover_next_upload">Hover — upload the next part</string>
+    <string name="fly_go_hover">Hover</string>
+    <string name="fly_go_land">Automatic landing</string>
+    <string name="fly_go_first_waypoint">Return to first waypoint</string>
+    <string name="plan_import_line">Import centreline</string>
+    <string name="plan_import_draft">Import plan</string>
+    <string name="plan_export_draft">Export</string>
+    <string name="plan_delete_draft">Delete</string>
+    <string name="plan_draft_actions_hint">Tap to load. Long-press to export or delete. Exported plans include locations; share them only with approved recipients.</string>
+    <string name="plan_corridor_add_point">Tap at least two centreline points</string>
+    <string name="plan_stat_cruise_only">cruise only; stops extra</string>
+    <string name="plan_stat_battery_unmeasured">reserve unmeasured</string>
+</resources>

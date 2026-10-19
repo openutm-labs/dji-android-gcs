@@ -61,10 +61,10 @@ class MissionRunnerTest {
         }
     }
 
-    private class TestAdapter(limits: MissionLimits, support: MissionSupport) : DroneAdapter {
+    private class TestAdapter(limits: MissionLimits, support: MissionSupport, camera: org.openutm.djiflight.core.mission.CameraModel? = null) : DroneAdapter {
         val op = ScriptedOperator()
         override val link = MutableStateFlow<LinkState>(LinkState.Connected(AircraftIdentity("SN1", "Test aircraft")))
-        override val capabilities: StateFlow<DroneCapabilities?> = MutableStateFlow(DroneCapabilities("Test aircraft", support, limits, hasRtk = false, nativeRateHz = 10))
+        override val capabilities: StateFlow<DroneCapabilities?> = MutableStateFlow(DroneCapabilities("Test aircraft", support, limits, hasRtk = false, nativeRateHz = 10, camera = camera))
         override val states: SharedFlow<DroneState> = MutableSharedFlow()
         override fun missionOperator(): MissionOperator = op
         override fun start() = Unit
@@ -79,6 +79,19 @@ class MissionRunnerTest {
 
     private fun TestScope.runner(adapter: TestAdapter, limits: MissionLimits = MissionLimits.WPML) =
         MissionRunner(backgroundScope, adapter, limits, FileMissionProgressStore(File(dir, "progress.json"))) { 120.0 }
+
+    @Test
+    fun `a changed or unknown survey camera blocks upload until the route is reviewed`() = runTest(UnconfinedTestDispatcher()) {
+        val expected = org.openutm.djiflight.core.mission.CameraModel.MAVIC_3E
+        for (camera in listOf(null, org.openutm.djiflight.core.mission.CameraModel.P4P_V2, expected)) {
+            val adapter = TestAdapter(MissionLimits.WPML, MissionSupport.WPML, camera)
+            val r = runner(adapter)
+            r.load("camera-check", plan(4).copy(cameraName = expected.name))
+            r.upload(); advanceUntilIdle()
+            assertEquals(if (camera == expected) 1 else 0, adapter.op.uploads.size)
+            assertEquals(if (camera == expected) MissionPhase.READY else MissionPhase.FAILED, r.ui.value.phase)
+        }
+    }
 
     @Test
     fun `a mission flown to the end is done`() = runTest(UnconfinedTestDispatcher()) {

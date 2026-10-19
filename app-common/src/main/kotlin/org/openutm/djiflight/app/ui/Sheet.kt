@@ -69,6 +69,9 @@ class Sheet(private val activity: Activity, wide: Boolean = false) {
 
     fun body(v: View) = apply { content.addView(v, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)) }
 
+    /** Status or instructions that must remain visible while a long form scrolls. */
+    fun footer(v: View) = apply { footer.addView(v, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)) }
+
     /** Buttons fill the bottom row, in the order added; the first is usually the safe choice. */
     fun button(label: String, kind: Kind = Kind.SECONDARY, iconRes: Int? = null, dismiss: Boolean = true, ref: ((ActionButton) -> Unit)? = null, action: () -> Unit = {}) = apply {
         val b = ActionButton(activity).set(label, iconRes, kind)

@@ -37,10 +37,15 @@ data class MissionPlan(
      * Null = the part's own highest point.
      */
     val returnHomeHeightM: Double? = null,
+    /** Planned geometry must be reviewed again if the connected survey camera changes. */
+    val cameraName: String? = null,
 ) {
     /** Highest point flown, travel legs and the return home included: what the declaration and RTH height must cover. */
     val maxHeightM: Double get() = maxOf(waypoints.maxOf { it.heightM }, travelHeightM ?: Double.NEGATIVE_INFINITY, returnHomeHeightM ?: Double.NEGATIVE_INFINITY)
     val routeLengthM: Double get() = waypoints.zipWithNext { a, b -> Geo.distanceM(a.position, b.position) }.sum()
+
+    /** Preserve inherited camera orientation when starting a later upload or checkpoint. */
+    fun pitchAt(index: Int): Double = waypoints.subList(0, index + 1).lastOrNull { it.gimbalPitchDeg != null }?.gimbalPitchDeg ?: gimbalPitchDeg
 
     /**
      * How far the highest ground under the waypoints is above take-off (terrain following; 0 otherwise).
@@ -62,6 +67,8 @@ data class MissionWaypoint(
     val transit: Boolean = false,
     /** Terrain following: the terrain model's ground here, relative to the take-off point (negative = lower). Null = not known. */
     val groundM: Double? = null,
+    /** Pitch set here and inherited until the next override; null initially uses the mission pitch. */
+    val gimbalPitchDeg: Double? = null,
 ) {
     val position: LatLng get() = LatLng(lat, lng)
 
@@ -105,6 +112,11 @@ object MissionValidator {
      * is checked by its height above the terrain model, any other by its height above take-off.
      */
     fun validate(plan: MissionPlan, limits: MissionLimits, legalMaxHeightM: Double): List<String> = buildList {
+        if (!legalMaxHeightM.isFinite() || legalMaxHeightM <= 0) add("invalid operating height limit")
+        if (!plan.autoSpeedMps.isFinite() || !plan.maxSpeedMps.isFinite() || plan.maxSpeedMps <= 0) add("mission speed must be positive and finite")
+        if (plan.travelHeightM?.isFinite() == false || plan.returnHomeHeightM?.isFinite() == false) add("travel and return heights must be finite")
+        if (plan.terrainFollowM != null && (!plan.terrainFollowM.isFinite() || plan.terrainFollowM <= 0)) add("terrain-follow height must be positive and finite")
+        if (plan.photoDistanceIntervalM != null && (!plan.photoDistanceIntervalM.isFinite() || plan.photoDistanceIntervalM <= 0)) add("photo interval must be positive and finite")
         val n = plan.waypoints.size
         if (n < limits.minWaypoints) add("mission needs at least ${limits.minWaypoints} waypoints, has $n")
         if (n > limits.maxWaypoints) add("mission has $n waypoints; this aircraft takes at most ${limits.maxWaypoints} (split it)")
@@ -117,6 +129,11 @@ object MissionValidator {
             if (t > legalMaxHeightM) add("travel altitude %.0f m exceeds the legal limit $legalMaxHeightM m".format(t))
         }
         plan.waypoints.forEachIndexed { i, w ->
+            if (!w.position.isValid || !w.heightM.isFinite()) add("waypoint $i has an invalid position or height")
+            if (w.groundM?.isFinite() == false) add("waypoint $i has an invalid terrain height")
+            if (w.speedMps != null && (!w.speedMps.isFinite() || w.speedMps <= 0 || w.speedMps > limits.maxSpeedMps)) add("waypoint $i has an invalid speed")
+            if (w.headingDeg != null && !w.headingDeg.isFinite()) add("waypoint $i has an invalid heading")
+            if (w.gimbalPitchDeg != null && (!w.gimbalPitchDeg.isFinite() || w.gimbalPitchDeg !in -90.0..0.0)) add("waypoint $i has an invalid gimbal pitch")
             if (w.heightM < limits.minHeightM || w.heightM > limits.maxHeightM) add("waypoint $i height ${w.heightM} m is outside the SDK range")
             if (w.groundM == null && w.heightM > legalMaxHeightM) add("waypoint $i height ${w.heightM} m exceeds the legal limit $legalMaxHeightM m")
             if (w.groundM != null && w.aboveGroundM > legalMaxHeightM) add("waypoint $i is %.0f m above the ground, over the legal limit $legalMaxHeightM m".format(w.aboveGroundM))
@@ -136,6 +153,7 @@ object MissionValidator {
             val last = end == plan.waypoints.size
             parts += plan.copy(
                 waypoints = plan.waypoints.subList(start, end),
+                gimbalPitchDeg = plan.pitchAt(start),
                 finishAction = if (last) plan.finishAction else FinishAction.HOVER,
             )
             start = end - 1
@@ -159,6 +177,10 @@ data class CameraModel(
     companion object {
         /** Phantom 4 Pro V2.0 (FC6310S): 1" sensor, 8.8 mm, 5472 x 3648. Same sensor and lens on the P4 Pro and P4 Advanced. */
         val P4P_V2 = CameraModel("Phantom 4 Pro V2.0", 13.2, 8.8, 8.8, 5472, 3648)
+
+        /** Mini 2 4:3 JPEG profile, derived from DJI's 83-degree diagonal FOV.
+         * The 4 x 3 lengths are normalized, not a claim about physical sensor millimetres. */
+        val MINI_2 = CameraModel("DJI Mini 2 4:3", 4.0, 3.0, 2.5 / kotlin.math.tan(Math.toRadians(83.0 / 2)), 4000, 3000)
 
         /** Mavic 2 Pro (Hasselblad L1D-20c): 1" sensor, 10.26 mm (28 mm equivalent), 5472 x 3648. */
         val MAVIC_2_PRO = CameraModel("Mavic 2 Pro", 13.2, 8.8, 10.26, 5472, 3648)
@@ -203,6 +225,12 @@ enum class SurveyPattern(val defaultGimbalDeg: Double) {
     CROSSHATCH(-70.0),
     /** Once round the area's edge, camera tilted towards its middle: the sides of buildings and trees in it. */
     PERIMETER(-45.0),
+    /** Nadir plus four fixed-heading oblique passes; capture planning, not reconstruction. */
+    FIVE_DIRECTION(-60.0),
+    /** Parallel offsets from an open centreline, including its bends. */
+    CORRIDOR(-90.0),
+    /** Circular capture layers outside the supplied building footprint. */
+    SURROUND(-45.0),
 }
 
 data class SurveySpec(
@@ -219,6 +247,10 @@ data class SurveySpec(
     val gimbalPitchDeg: Double = -90.0,
     val travelHeightM: Double? = null,
     val pattern: SurveyPattern = SurveyPattern.GRID,
+    val corridorWidthM: Double = 60.0,
+    val orbitStandoffM: Double = 20.0,
+    val orbitTopHeightM: Double? = null,
+    val orbitLayerSpacingM: Double = 20.0,
 )
 
 data class SurveyResult(
@@ -236,8 +268,8 @@ data class SurveyResult(
 
 /**
  * Survey routes over a polygon ([SurveyPattern]). Grid lines run along [SurveySpec.headingDeg], with
- * the image's long side across track. Concave polygons are covered by each line's full extent (the
- * line flies over any notch). Spacing is computed for a camera pointing straight down; a tilted
+ * the image's long side across track. Concave scan lines are clipped into separate strips and connectors stay
+ * within the simple polygon. Holes must be planned as separate areas. Spacing is computed for a camera pointing straight down; a tilted
  * camera sees further, so its overlap is at least that.
  */
 object SurveyPlanner {
@@ -248,7 +280,13 @@ object SurveyPlanner {
     fun plan(spec: SurveySpec): SurveyResult {
         require(spec.frontOverlap in 0.0..0.95 && spec.sideOverlap in 0.0..0.95) { "overlaps must be within 0..0.95" }
         require(spec.heightM > 0 && spec.speedMps > 0)
+        require(spec.polygon.all { it.isValid }) { "route contains invalid coordinates" }
+        require(spec.polygon.size <= 256) { "use at most 256 input points" }
+        require(spec.heightM.isFinite() && spec.speedMps.isFinite())
+        require(spec.gimbalPitchDeg.isFinite() && spec.gimbalPitchDeg in -90.0..0.0)
+        if (spec.pattern == SurveyPattern.CORRIDOR) return AdvancedSurveys.corridor(spec)
         val ring = Geo.closeRing(spec.polygon)
+        require(Geo.bbox(ring).let { it.maxLng - it.minLng < 1 && it.maxLat - it.minLat < 1 }) { "split large or antimeridian-crossing areas into smaller plans" }
         val gsd = spec.camera.gsdM(spec.heightM)
         val lineSpacing = gsd * spec.camera.imageWidthPx * (1 - spec.sideOverlap)
         val photoSpacing = gsd * spec.camera.imageHeightPx * (1 - spec.frontOverlap)
@@ -258,18 +296,40 @@ object SurveyPlanner {
         when (spec.pattern) {
             SurveyPattern.GRID -> {
                 waypoints = grid(ring, spec.headingDeg, spec.heightM, lineSpacing)
-                lines = waypoints.size / 2
+                lines = waypoints.count { !it.transit } / 2
             }
             SurveyPattern.CROSSHATCH -> {
                 val first = grid(ring, spec.headingDeg, spec.heightM, lineSpacing)
                 val second = crossing(first.lastOrNull()?.position, ring, spec.headingDeg, spec.heightM, lineSpacing)
-                waypoints = first + second
-                lines = (first.size + second.size) / 2
+                val bridge = if (first.isEmpty() || second.isEmpty()) emptyList() else PolygonRouting(ring).connect(first.last().position, second.first().position).map { MissionWaypoint(it.lat,it.lng,spec.heightM,transit=true) }
+                waypoints = first + bridge + second
+                lines = (first + second).count { !it.transit } / 2
             }
             SurveyPattern.PERIMETER -> {
                 waypoints = perimeter(ring, spec.heightM)
                 lines = 1
             }
+            SurveyPattern.FIVE_DIRECTION -> {
+                val base = grid(ring, spec.headingDeg, spec.heightM, lineSpacing)
+                require(base.size >= 2) { "area is too small for the selected camera and overlap" }
+                val passes = listOf<Double?>(null, 0.0, 90.0, 180.0, 270.0).flatMapIndexed { pass, facing ->
+                    val route = base
+                    route.mapIndexed { i, w -> w.copy(headingDeg = facing, gimbalPitchDeg = if (pass == 0) -90.0 else spec.gimbalPitchDeg) }
+                }
+                val joined = ArrayList<MissionWaypoint>()
+                passes.chunked(base.size).forEach { pass ->
+                    joined.lastOrNull()?.let { previous ->
+                        PolygonRouting(ring).connect(previous.position, pass.first().position).forEach { p ->
+                            joined += MissionWaypoint(p.lat,p.lng,spec.heightM,transit=true)
+                        }
+                    }
+                    joined += pass
+                }
+                waypoints = joined
+                lines = base.count { !it.transit } / 2 * 5
+            }
+            SurveyPattern.SURROUND -> return AdvancedSurveys.surround(spec)
+            SurveyPattern.CORRIDOR -> error("handled before closing the centreline")
         }
         val plan = MissionPlan(
             waypoints = waypoints,
@@ -277,6 +337,7 @@ object SurveyPlanner {
             photoDistanceIntervalM = photoSpacing,
             gimbalPitchDeg = spec.gimbalPitchDeg,
             travelHeightM = spec.travelHeightM?.takeIf { it > spec.heightM },
+            cameraName = spec.camera.name,
         )
         return SurveyResult(plan, if (spec.pattern == SurveyPattern.PERIMETER) 0.0 else lineSpacing, photoSpacing, gsd * 100, lines)
     }
@@ -289,10 +350,12 @@ object SurveyPlanner {
         fun rot(p: XY) = XY(p.x * cos(phi) + p.y * sin(phi), -p.x * sin(phi) + p.y * cos(phi))
         fun unrot(p: XY) = XY(p.x * cos(phi) - p.y * sin(phi), p.x * sin(phi) + p.y * cos(phi))
         val pts = ring.map { rot(plane.toXY(it)) }
+        val router = PolygonRouting(ring)
 
         val minY = pts.minOf { it.y }
         val maxY = pts.maxOf { it.y }
         val lines = max(1, ceil((maxY - minY) / spacing).toInt())
+        require(lines <= 2_000) { "survey is too large; split it into smaller areas" }
         val waypoints = ArrayList<MissionWaypoint>()
         for (k in 0 until lines) {
             val y = minY + spacing / 2 + k * spacing
@@ -300,12 +363,18 @@ object SurveyPlanner {
                 if ((a.y <= y) == (b.y <= y)) null else a.x + (y - a.y) * (b.x - a.x) / (b.y - a.y)
             }
             if (xs.size < 2) continue
-            var x0 = xs.min()
-            var x1 = xs.max()
-            if (waypoints.size / 2 % 2 == 1) x0 = x1.also { x1 = x0 }
-            for (x in listOf(x0, x1)) {
-                val p = plane.toLatLng(unrot(XY(x, y)))
-                waypoints += MissionWaypoint(p.lat, p.lng, heightM)
+            val sorted = xs.sorted()
+            val pairs = sorted.chunked(2).filter { it.size == 2 && it[1] - it[0] >= 0.5 }
+            val ordered = if (k % 2 == 0) pairs else pairs.reversed()
+            for (pair in ordered) {
+                val endpoints = if (k % 2 == 0) pair else pair.reversed()
+                val segment = endpoints.map { x -> plane.toLatLng(unrot(XY(x, y))) }
+                waypoints.lastOrNull()?.let { previous ->
+                    router.connect(previous.position, segment.first()).forEach { p ->
+                        waypoints += MissionWaypoint(p.lat, p.lng, heightM, transit = true)
+                    }
+                }
+                for (p in segment) waypoints += MissionWaypoint(p.lat, p.lng, heightM)
             }
         }
         return waypoints
@@ -318,6 +387,7 @@ object SurveyPlanner {
     private fun crossing(from: LatLng?, ring: List<LatLng>, headingDeg: Double, heightM: Double, spacing: Double): List<MissionWaypoint> {
         val a = grid(ring, headingDeg + 90, heightM, spacing)
         if (from == null || a.size < 2) return a
+        if (a.any { it.transit }) return listOf(a, a.reversed()).minBy { Geo.distanceM(from, it.first().position) }
         // Every line pointing the same way, then the four lawnmowers over them: either end first, either way along the first line.
         val lines = a.chunked(2).mapIndexed { i, l -> if (i % 2 == 0) l else l.reversed() }
         val options = listOf(lines, lines.reversed()).flatMap { order ->

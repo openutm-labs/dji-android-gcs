@@ -52,7 +52,20 @@ class BlenderBackend(
     private val submittedBy: String,
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) : UtmBackend {
+    override val serverId = org.openutm.djiflight.core.sync.ServerIdentity.of(baseUrl)
     private val base = baseUrl.trimEnd('/')
+
+    /** Authenticate and verify a protected read, without creating an operation or sending telemetry. */
+    suspend fun checkConnection(): BackendResult<Unit> {
+        return when (val r = call("GET", "/flight_declaration_ops/flight_declaration?page_size=1", null)) {
+            is Raw.Fail -> r.result
+            is Raw.Resp -> when {
+                r.status != 200 -> classify(r.status, r.body)
+                (parse(r.body) as? JsonObject)?.get("results") !is JsonArray -> BackendResult.Rejected(200, "Server did not return a Flight Blender declaration list")
+                else -> BackendResult.Ok(Unit)
+            }
+        }
+    }
 
     override suspend fun declare(plan: DeclarationPlan): BackendResult<String> {
         val (status, body) = when (val r = call("POST", "/flight_declaration_ops/set_flight_declaration", declarationBody(plan))) {

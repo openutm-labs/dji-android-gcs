@@ -2,6 +2,7 @@
 <!-- Plan screen (PlanActivity). -->
 <resources>
     <!-- Top bar and map tools -->
+    <string name="plan_hint_map_missing">No offline map installed. Tap to import.</string>
     <string name="plan_title">Plan a flight</string>
     <string name="plan_tab_manual">Manual flight</string>
     <string name="plan_tab_manual_short">Manual</string>
@@ -110,7 +111,7 @@
 
     <!-- No missions on the connected aircraft (its model) -->
     <string name="plan_no_missions_title">No missions on the %1$s</string>
-    <string name="plan_no_missions_message">DJI\'s firmware has no waypoint missions on this aircraft. Plan a manual flight and fly the survey by hand.</string>
+    <string name="plan_no_missions_message">No qualified automatic mission executor is enabled for this aircraft. Mini 2 Virtual Stick surveys require an explicitly enabled experimental test build and hardware validation. Manual flight and logging remain available.</string>
     <string name="plan_ok">OK</string>
 
     <!-- Map hints -->
@@ -119,7 +120,7 @@
     <string name="plan_hint_move_takeoff">Tap or drag to move the take-off point</string>
     <string name="plan_hint_first_corner">Tap the map to add the survey\'s corners</string>
     <string name="plan_hint_add_corner">Tap to add corner %1$d (at least 3)</string>
-    <string name="plan_hint_drag_corner">Drag a corner to move it · drag + to add one</string>
+    <string name="plan_hint_drag_corner">Drag a point to move it · drag + to add one</string>
     <string name="plan_boundary_imported">Imported: %1$s</string>
     <string name="plan_boundary_fallback">boundary</string>
     <!-- Name of an imported boundary that has none -->

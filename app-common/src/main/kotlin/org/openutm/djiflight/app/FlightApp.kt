@@ -107,10 +107,12 @@ class AppGraph(private val app: Application, val platform: Platform) {
     private val _track = MutableStateFlow<List<LatLng>>(emptyList())
     val track: StateFlow<List<LatLng>> = _track.asStateFlow()
 
+    private val flightRepo = FlightRepository(File(app.filesDir, "flights")) { backend.serverId }
+
     val service: FlightService by lazy {
         FlightService(
             adapter = adapter,
-            repo = FlightRepository(File(app.filesDir, "flights")),
+            repo = flightRepo,
             sync = SyncEngine(backend, clock),
             clock = clock,
             grid = grid,
@@ -125,18 +127,24 @@ class AppGraph(private val app: Application, val platform: Platform) {
 
     init {
         // Re-validated on every start: a release build must not keep a dev token a debug build stored.
-        secure.read()?.let { runCatching { ProvisioningCodec.decode(it) }.getOrNull() }
+        val previous = secure.read()?.let { runCatching { ProvisioningCodec.decode(it) }.getOrNull() }
             ?.takeIf { it.problems(allowDevAuth = platform.debug).isEmpty() }
-            ?.let(::applyProvisioning)
+        flightRepo.migrateLegacy(previous?.let { org.openutm.djiflight.core.sync.ServerIdentity.of(it.blenderUrl) })
+        previous?.let(::applyProvisioning)
     }
 
     /** Validates, stores (encrypted) and applies a provisioning; returns the problems if refused. */
     fun provision(p: DeviceProvisioning): List<String> {
         val problems = p.problems(allowDevAuth = platform.debug)
         if (problems.isNotEmpty()) return problems
+        val changingServer = backend.serverId != org.openutm.djiflight.core.sync.ServerIdentity.of(p.blenderUrl)
+        val status = service.status.value
+        if (changingServer && (status.lastState?.isFlying == true || status.activeFlight?.let { it.everFlown && !it.recordingClosed } == true)) {
+            return listOf("Land and finish the current flight before changing the UTM server.")
+        }
         secure.write(ProvisioningCodec.toJson(p))
         applyProvisioning(p)
-        service.syncSoon()
+        service.backendChanged()
         return emptyList()
     }
 
@@ -148,12 +156,24 @@ class AppGraph(private val app: Application, val platform: Platform) {
         imagery = ImageryService("DroneDeploy", project = "Dev test project"),
     )
 
-    private fun applyProvisioning(p: DeviceProvisioning) {
+    /** Read-only credential check for manual setup; does not replace the active server. */
+    suspend fun checkProvisioning(p: DeviceProvisioning): org.openutm.djiflight.core.sync.BackendResult<Unit> {
+        val problems = p.problems(allowDevAuth = platform.debug)
+        if (problems.isNotEmpty()) return org.openutm.djiflight.core.sync.BackendResult.Rejected(400, problems.joinToString("; "))
+        return configuredBackend(p).checkConnection()
+    }
+
+    private fun configuredBackend(p: DeviceProvisioning): BlenderBackend {
         val tokens = when (val a = p.auth) {
             AuthConfig.Dev -> DevTokenProvider(clock)
             is AuthConfig.ClientCredentials -> ClientCredentialsTokenProvider(transport, a.tokenUrl, a.clientId, a.clientSecret, a.scope, a.audience, clock)
         }
-        backend.target = BlenderBackend(p.blenderUrl, tokens, transport, submittedBy = "${p.operatorId}/${p.deviceName}")
+        return BlenderBackend(p.blenderUrl, tokens, transport, submittedBy = "${p.operatorId}/${p.deviceName}")
+    }
+
+    private fun applyProvisioning(p: DeviceProvisioning) {
+        backend.target = configuredBackend(p)
+        zones.backendChanged()
         // A sign-in from another identity server (or none configured now) no longer says who flies.
         pilots.current.value?.let { s -> if (s.issuer.trimEnd('/') != p.pilotLogin?.issuer?.trimEnd('/')) pilots.signOut() }
         _provisioning.value = p

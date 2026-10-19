@@ -51,6 +51,25 @@
     <string name="setup_delete_file_message">The file holds this device\'s secret. Delete it from the microSD card, or give the card back to your lab admin.</string>
     <string name="setup_cant_read_file">Can\'t read the file</string>
 
+    <string name="setup_panama_default">Panama is the default server. Import or scan the private setup provided by your administrator, or enter this device’s credentials below. Contact your administrator to request access.</string>
+    <string name="setup_panama_manual">Enter Panama device setup</string>
+    <string name="setup_panama_pilot">Pilot name</string>
+    <string name="setup_panama_client_id">Device client ID</string>
+    <string name="setup_panama_client_secret">Device client secret</string>
+    <string name="setup_panama_height">Height limit above ground (metres)</string>
+    <string name="setup_panama_aircraft_note">Aircraft details are optional now. Connect the aircraft to select it when planning, or enter its serial below to plan in advance.</string>
+    <string name="setup_panama_serial">Aircraft serial (optional)</string>
+    <string name="setup_panama_model">Aircraft model (optional)</string>
+    <string name="setup_panama_registration">Aircraft registration (if assigned)</string>
+    <string name="setup_panama_credentials_note">Use the credentials your administrator issued for this device. Connecting checks account access; it does not create a flight declaration.</string>
+    <string name="setup_panama_connect">Connect to Panama</string>
+    <string name="setup_panama_invalid_height">Enter a height limit in metres.</string>
+    <string name="setup_panama_serial_required">Enter the aircraft serial with its model or registration.</string>
+    <string name="setup_panama_pilot_required">Enter the pilot’s name.</string>
+    <string name="setup_panama_checking">Checking access to Panama…</string>
+    <string name="setup_panama_connected">Connected to Panama</string>
+    <string name="setup_panama_failed">Could not connect: %1$s</string>
+
     <!-- Setup: offline maps -->
     <string name="maps_body">The map works with no network: it reads map files stored on this controller, never online tiles.</string>
     <string name="maps_no_files_listed">This device\'s setup lists no map files: import them from a card.</string>

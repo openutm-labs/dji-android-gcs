@@ -21,6 +21,8 @@ interface Platform {
     val versionName: String
     /** Debug build: accepts the dev token and shows "Use local dev stack". */
     val debug: Boolean
+    /** Replay builds keep local-development onboarding. */
+    val isSimulation: Boolean get() = false
     /** Debug builds only: the local Blender for "Use local dev stack". */
     val devBlenderUrl: String
 

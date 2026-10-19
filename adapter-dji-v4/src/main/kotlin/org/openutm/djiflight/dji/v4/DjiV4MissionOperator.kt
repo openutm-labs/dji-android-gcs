@@ -32,11 +32,13 @@ import kotlin.coroutines.resume
 /** Core [MissionPlan] → DJI v4 Waypoint 1.0 `WaypointMission`. */
 object WaypointV1Mapper {
     fun toMission(plan: MissionPlan): WaypointMission {
+        var pitch = plan.gimbalPitchDeg
         val waypoints = plan.waypoints.mapIndexed { i, w ->
             Waypoint(w.lat, w.lng, w.heightM.toFloat()).apply {
                 w.speedMps?.let { speed = it.toFloat() }
                 w.headingDeg?.let { heading = (((it + 180) % 360 + 360) % 360 - 180).toInt() }
-                gimbalPitch = plan.gimbalPitchDeg.toFloat()
+                pitch = w.gimbalPitchDeg ?: pitch
+                gimbalPitch = pitch.toFloat()
                 // Photos on the leg from this waypoint to the next: survey legs only, not travel legs.
                 val surveyLeg = !w.transit && plan.waypoints.getOrNull(i + 1)?.transit == false
                 plan.photoDistanceIntervalM?.takeIf { surveyLeg }?.let { shootPhotoDistanceInterval = it.toFloat() }

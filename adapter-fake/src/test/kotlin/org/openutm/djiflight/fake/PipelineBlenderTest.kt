@@ -77,7 +77,7 @@ class PipelineBlenderTest {
         val flaky = FlakyTransport(UrlConnectionTransport())
         val backend = BlenderBackend(url, DevTokenProvider(), flaky, submittedBy = "dji-flight-pipeline-test@openutm.local")
         val sync = SyncEngine(backend, clock, SyncConfig(declareLeadMs = 2_000, clockSkewMs = 1_000, minBackoffMs = 1_000, maxBackoffMs = 2_000))
-        val repo = FlightRepository(tmp)
+        val repo = FlightRepository(tmp) { backend.serverId }
         val service = FlightService(adapter, repo, sync, clock, Egm96Grid.bundled(), ServiceConfig(liveSyncIntervalMs = 1_000), scope)
         scope.launch { adapter.simulatedDeviceFixes().collect(service::onDeviceFix) }
 

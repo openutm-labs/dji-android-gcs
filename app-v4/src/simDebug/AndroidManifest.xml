@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Shell/system only, in a simulator debug APK; absent from DJI and release variants. -->
+        <activity android:name=".PlanSmokeActivity" android:exported="true" android:permission="android.permission.DUMP"
+            android:screenOrientation="sensorLandscape" android:theme="@style/Theme.OpenUTM" />
+    </application>
+</manifest>

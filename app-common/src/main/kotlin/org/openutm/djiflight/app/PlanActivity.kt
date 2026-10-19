@@ -49,6 +49,9 @@ import org.openutm.djiflight.core.declaration.GroundEstimate
 import org.openutm.djiflight.core.geo.Geo
 import org.openutm.djiflight.core.geo.LatLng
 import org.openutm.djiflight.core.kml.Kml
+import org.openutm.djiflight.core.mission.PlanLibrary
+import org.openutm.djiflight.core.mission.SavedSurvey
+import java.io.File
 import org.openutm.djiflight.core.mission.CameraModel
 import org.openutm.djiflight.core.mission.MissionLimits
 import org.openutm.djiflight.core.mission.MissionValidator
@@ -93,6 +96,7 @@ class PlanActivity : Activity() {
     private val survey = ArrayList<LatLng>()
     private val undo = ArrayList<List<LatLng>>()
     private var surveyResult: SurveyResult? = null
+    private var plannerProblem: String? = null
     private var area: List<LatLng>? = null
     private var ground: GroundEstimate? = null
     private var signInText: TextView? = null
@@ -110,6 +114,9 @@ class PlanActivity : Activity() {
     private lateinit var body: LinearLayout
     private lateinit var footerNote: TextView
     private lateinit var declareButton: ActionButton
+    private lateinit var importButton: ActionButton
+    private var compactImport = false
+    private var exporting: SavedSurvey? = null
     private lateinit var manualTab: ActionButton
     private lateinit var missionTab: ActionButton
     private val statValues = ArrayList<TextView>()
@@ -143,7 +150,14 @@ class PlanActivity : Activity() {
     private lateinit var heading: Stepper
     private lateinit var gimbal: Stepper
     private var pattern = SurveyPattern.GRID
-    private var patternButtons: List<Pair<SurveyPattern, ActionButton>> = emptyList()
+    private lateinit var patternSpinner: Spinner
+    private lateinit var routeWidth: Stepper
+    private lateinit var orbitTop: Stepper
+    private lateinit var orbitLayer: Stepper
+    private lateinit var widthRow: View
+    private lateinit var topRow: View
+    private lateinit var layerRow: View
+    private val library by lazy { PlanLibrary(File(filesDir, "plans")) }
     private lateinit var patternHint: TextView
     private lateinit var headingRow: View
     private lateinit var sideOverlapRow: View
@@ -183,6 +197,7 @@ class PlanActivity : Activity() {
         buildMapTools()
         buildPanel(p.legalMaxHeightM)
 
+        ui.launch { graph.maps.version.collect { map.reloadStyle() } }
         startMs = graph.clock.nowMs()
         showKind(false)
         ui.launch {
@@ -197,7 +212,8 @@ class PlanActivity : Activity() {
 
     private val editor = object : MapController.Editor {
         override fun corners(): List<LatLng> = if (mission) survey else listOfNotNull(center?.takeIf { boundary == null })
-        override val insertable get() = mission && survey.size >= 3
+        override val insertable get() = mission && survey.size >= (if (pattern == SurveyPattern.CORRIDOR) 2 else 3)
+        override val closed get() = pattern != SurveyPattern.CORRIDOR
         override fun insert(afterIndex: Int, p: LatLng) {
             pushUndo()
             survey.add(afterIndex + 1, p)
@@ -226,6 +242,11 @@ class PlanActivity : Activity() {
     private fun buildMapTools() {
         mapHint = findViewById(R.id.mapHint)
         mapHint.background = rounded(color(R.color.scrim), dp(8).toFloat())
+        mapHint.setOnClickListener {
+            if (!graph.maps.basemap.isFile && !graph.maps.imagery.isFile) {
+                startActivity(Intent(this, SetupActivity::class.java).putExtra("section", "maps"))
+            }
+        }
         val tools = findViewById<LinearLayout>(R.id.mapTools)
         undoButton = ActionButton(this).set(getString(R.string.plan_undo), R.drawable.ic_undo, Kind.SECONDARY).apply {
             background = rounded(color(R.color.scrim), dp(8).toFloat())
@@ -278,9 +299,11 @@ class PlanActivity : Activity() {
         tabs.addView(missionTab, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(42)))
         bar.addView(tabs, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         bar.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
-        bar.addView(ActionButton(this).set(getString(if (narrow) R.string.plan_import_short else R.string.plan_import), R.drawable.ic_import, Kind.SECONDARY).apply {
+        compactImport = narrow
+        importButton = ActionButton(this).set(getString(if (narrow) R.string.plan_import_short else R.string.plan_import), R.drawable.ic_import, Kind.SECONDARY).apply {
             setOnClickListener { startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"), REQ_KML) }
-        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(44)))
+        }
+        bar.addView(importButton, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(44)))
         findViewById<LinearLayout>(R.id.topBar).addView(bar, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
     }
 
@@ -353,11 +376,22 @@ class PlanActivity : Activity() {
         missionBox.addView(section(getString(R.string.plan_section_survey)))
         missionBox.addView(altRow)
         missionBox.addView(patternRow())
+        routeWidth = stepper(getString(R.string.plan_route_width), 60.0, 5.0, 500.0, 5.0) { getString(R.string.plan_value_m, it) }
+        orbitTop = stepper(getString(R.string.plan_orbit_top), 80.0, 20.0, legal, 5.0) { getString(R.string.plan_value_m, it) }
+        orbitLayer = stepper(getString(R.string.plan_orbit_layer), 20.0, 5.0, 100.0, 5.0) { getString(R.string.plan_value_m, it) }
+        widthRow = Stepper.row(this, getString(R.string.plan_route_width), getString(R.string.plan_route_width_hint), routeWidth)
+        topRow = Stepper.row(this, getString(R.string.plan_orbit_top), null, orbitTop)
+        layerRow = Stepper.row(this, getString(R.string.plan_orbit_layer), null, orbitLayer)
+        missionBox.addView(widthRow); missionBox.addView(topRow); missionBox.addView(layerRow)
+        val saved = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        saved.addView(ActionButton(this).set(getString(R.string.plan_save_draft), null, Kind.SECONDARY).apply { setOnClickListener { saveDraft() } }, LinearLayout.LayoutParams(0, dp(48), 1f))
+        saved.addView(ActionButton(this).set(getString(R.string.plan_open_draft), null, Kind.SECONDARY).apply { setOnClickListener { openDrafts() } }, LinearLayout.LayoutParams(0, dp(48), 1f))
+        missionBox.addView(saved)
         advancedSummary = text(13f, R.color.text3)
         advancedBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; visibility = View.GONE }
         frontOverlap = stepper(getString(R.string.plan_front_overlap), 75.0, 50.0, 90.0, 5.0) { getString(R.string.plan_value_percent, it) }
         sideOverlap = stepper(getString(R.string.plan_side_overlap), 65.0, 40.0, 90.0, 5.0) { getString(R.string.plan_value_percent, it) }
-        speed = stepper(getString(R.string.plan_speed), 8.0, 1.0, 15.0, 1.0) { getString(R.string.plan_value_mps, it) }
+        speed = stepper(getString(R.string.plan_speed), if (graph.adapter.capabilities.value?.missionSupport == MissionSupport.VIRTUAL_STICK_EXPERIMENTAL) 2.0 else 8.0, 1.0, if (graph.adapter.capabilities.value?.missionSupport == MissionSupport.VIRTUAL_STICK_EXPERIMENTAL) 3.0 else 15.0, 1.0) { getString(R.string.plan_value_mps, it) }
         heading = stepper(getString(R.string.plan_heading), 0.0, 0.0, 355.0, 5.0) { getString(R.string.plan_value_degrees, it) }
         gimbal = stepper(getString(R.string.plan_gimbal), -90.0, -90.0, 0.0, 5.0) { getString(R.string.plan_value_degrees, it).replace('-', '−') }
         travel = stepper(getString(R.string.plan_travel), 0.0, 0.0, legal, 5.0) { if (it <= 0.0) getString(R.string.plan_travel_off) else getString(R.string.plan_value_m, it) }
@@ -417,9 +451,9 @@ class PlanActivity : Activity() {
 
     private fun buildDetails() {
         val p = graph.provisioning.value ?: return
-        pilots = p.pilots.ifEmpty { if (graph.platform.debug) listOf(Pilot("pilot-dev", "Dev pilot")) else emptyList() }
+        pilots = p.pilots.ifEmpty { if (p.auth is org.openutm.djiflight.core.provisioning.AuthConfig.Dev) listOf(Pilot("pilot-dev", "Dev pilot")) else emptyList() }
         val connected = (graph.service.status.value.link as? LinkState.Connected)?.identity
-        aircraft = p.aircraft.map { AircraftChoice("${it.model.ifBlank { getString(R.string.plan_aircraft_model_fallback) }} ${it.registration}", it.serial, it.registration) }
+        aircraft = p.aircraft.map { AircraftChoice("${it.model.ifBlank { getString(R.string.plan_aircraft_model_fallback) }} ${it.registration}".trim(), it.serial, it.registration) }
             .let { list -> if (connected != null && list.none { it.serial == connected.serial }) listOf(AircraftChoice(getString(R.string.plan_aircraft_unlisted, connected.model), connected.serial, "UNREGISTERED")) + list else list }
         val saved = graph.sites.all()
         siteNames = listOf(getString(R.string.plan_site_here)) + saved.map { it.name } + listOf(getString(R.string.plan_site_map))
@@ -517,16 +551,18 @@ class PlanActivity : Activity() {
     /** The connected aircraft's camera (e.g. the payload on a Matrice 400), else this APK's default. */
     private fun camera(): CameraModel = graph.adapter.capabilities.value?.camera ?: graph.platform.defaultCamera
 
-    /** The connected aircraft can't fly waypoint missions (e.g. Mini 2, Air 2S: DJI firmware has none in MSDK v4). */
+    /** Native and experimental execution availability are separate from SDK device connectivity. */
     private fun noMissionSupport(): String? {
         if (graph.service.status.value.link !is LinkState.Connected) return null
         val caps = graph.adapter.capabilities.value ?: return null
-        return caps.model.takeIf { caps.missionSupport == MissionSupport.NONE }
+        return caps.model.takeIf { caps.missionSupport == MissionSupport.NONE || caps.camera == null }
     }
 
     private fun spec() = SurveySpec(
         survey, camera(), altitude.current, frontOverlap.current / 100, sideOverlap.current / 100, heading.current, speed.current,
         gimbalPitchDeg = gimbal.current, travelHeightM = travel.current.takeIf { it > 0 }, pattern = pattern,
+        corridorWidthM = routeWidth.current, orbitStandoffM = routeWidth.current,
+        orbitTopHeightM = maxOf(altitude.current, orbitTop.current), orbitLayerSpacingM = orbitLayer.current,
     )
 
     /**
@@ -542,20 +578,28 @@ class PlanActivity : Activity() {
         return plan?.let { r.copy(plan = it) } ?: r
     }
 
-    /** Grid (maps), Crosshatch and Perimeter (3D); choosing one sets its usual gimbal angle. */
+    private fun patternLabel(p: SurveyPattern): String = getString(when (p) {
+        SurveyPattern.GRID -> R.string.plan_pattern_grid
+        SurveyPattern.CROSSHATCH -> R.string.plan_pattern_crosshatch
+        SurveyPattern.PERIMETER -> R.string.plan_pattern_perimeter
+        SurveyPattern.FIVE_DIRECTION -> R.string.plan_pattern_five
+        SurveyPattern.CORRIDOR -> R.string.plan_pattern_corridor
+        SurveyPattern.SURROUND -> R.string.plan_pattern_surround
+    })
+
     private fun patternRow(): View {
-        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(6), 0, dp(4)) }
-        val seg = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        patternButtons = listOf(SurveyPattern.GRID to getString(R.string.plan_pattern_grid), SurveyPattern.CROSSHATCH to getString(R.string.plan_pattern_crosshatch), SurveyPattern.PERIMETER to getString(R.string.plan_pattern_perimeter)).map { (p, label) ->
-            p to ActionButton(this).set(label, null, if (p == pattern) Kind.PRIMARY else Kind.SECONDARY).also { b ->
-                b.setPadding(dp(4), b.paddingTop, dp(4), b.paddingBottom)
-                b.label.textSize = 15f
-                b.setOnClickListener { choosePattern(p) }
-                seg.addView(b, LinearLayout.LayoutParams(0, dp(48), 1f).apply { if (seg.childCount > 0) marginStart = dp(6) })
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        patternSpinner = Spinner(this).apply {
+            adapter = ArrayAdapter(this@PlanActivity, android.R.layout.simple_spinner_dropdown_item, SurveyPattern.entries.map(::patternLabel))
+            onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    if (::gimbal.isInitialized) choosePattern(SurveyPattern.entries[position])
+                }
             }
         }
+        box.addView(patternSpinner, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(48)))
         patternHint = text(13f, R.color.text3).apply { setPadding(0, dp(6), 0, 0) }
-        box.addView(seg)
         box.addView(patternHint)
         return box
     }
@@ -564,7 +608,72 @@ class PlanActivity : Activity() {
         if (p == pattern) return
         pattern = p
         gimbal.setValue(p.defaultGimbalDeg)
-        patternButtons.forEach { (q, b) -> b.kind = if (q == p) Kind.PRIMARY else Kind.SECONDARY }
+        if (p == SurveyPattern.SURROUND) routeWidth.setValue(20.0)
+        patternSpinner.setSelection(p.ordinal)
+        recompute(force = true)
+    }
+
+    private fun saveDraft() {
+        if (survey.size < (if (pattern == SurveyPattern.CORRIDOR) 2 else 3)) return refuse(getString(R.string.plan_refuse_corners))
+        val name = EditText(this).apply { setText(siteName.text.toString()); hint = getString(R.string.plan_draft_name); maxLines = 1 }
+        Sheet(this).title(getString(R.string.plan_save_draft)).body(name).button(getString(R.string.plan_ok)) {
+            runCatching { library.save(SavedSurvey(name = name.text.toString().trim(), points = survey.toList(), pattern = pattern,
+                heightM = altitude.current, frontOverlap = frontOverlap.current / 100, sideOverlap = sideOverlap.current / 100,
+                headingDeg = heading.current, speedMps = speed.current, gimbalPitchDeg = gimbal.current,
+                travelHeightM = travel.current.takeIf { it > 0 }, followTerrain = followTerrain, widthM = routeWidth.current,
+                topHeightM = maxOf(altitude.current, orbitTop.current), layerSpacingM = orbitLayer.current)) }
+                .onFailure { refuse(it.message ?: getString(R.string.plan_draft_failed)) }
+        }.show()
+    }
+
+    private fun openDrafts() {
+        val plans = library.list()
+        if (plans.isEmpty()) {
+            Sheet(this).title(getString(R.string.plan_open_draft)).message(getString(R.string.plan_drafts_empty))
+                .button(getString(R.string.plan_import_draft)) { importDraft() }.button(getString(R.string.plan_ok)).show()
+            return
+        }
+        val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        list.addView(Sheet.note(this, getString(R.string.plan_draft_actions_hint)))
+        lateinit var sheet: Sheet
+        plans.forEach { draft ->
+            list.addView(ActionButton(this).set(draft.name, null, Kind.SECONDARY).apply {
+                setOnClickListener { sheet.dismiss(); loadDraft(draft) }
+                setOnLongClickListener {
+                    Sheet(this@PlanActivity).title(draft.name)
+                        .button(getString(R.string.plan_export_draft)) {
+                            exporting = draft
+                            startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("application/json")
+                                .putExtra(Intent.EXTRA_TITLE, "openutm-${draft.id}.json"), REQ_PLAN_EXPORT)
+                        }
+                        .button(getString(R.string.plan_delete_draft), Kind.DANGER) {
+                            Sheet(this@PlanActivity).title(draft.name).message(getString(R.string.plan_delete_draft_question))
+                                .button(getString(R.string.plan_ok), Kind.DANGER) {
+                                    runCatching { library.delete(draft) }.onFailure { refuse(getString(R.string.plan_draft_failed)) }; sheet.dismiss()
+                                }.show()
+                        }.button(getString(R.string.plan_ok)).show()
+                    true
+                }
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(52)))
+        }
+        sheet = Sheet(this).title(getString(R.string.plan_open_draft)).body(list)
+            .button(getString(R.string.plan_import_draft)) { importDraft() }.button(getString(R.string.plan_ok))
+        sheet.show()
+    }
+
+    private fun importDraft() {
+        startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("application/json"), REQ_PLAN_IMPORT)
+    }
+
+    private fun loadDraft(d: SavedSurvey) {
+        pushUndo(); survey.clear(); survey += d.points
+        choosePattern(d.pattern)
+        altitude.setValue(d.heightM); frontOverlap.setValue(d.frontOverlap * 100); sideOverlap.setValue(d.sideOverlap * 100)
+        heading.setValue(d.headingDeg); speed.setValue(d.speedMps); gimbal.setValue(d.gimbalPitchDeg)
+        travel.setValue(d.travelHeightM ?: 0.0); routeWidth.setValue(d.widthM)
+        orbitTop.setValue(d.topHeightM ?: d.heightM); orbitLayer.setValue(d.layerSpacingM)
+        followTerrain = d.followTerrain; siteName.setText(d.name); fitted = false
+        showKind(true)
         recompute(force = true)
     }
 
@@ -581,7 +690,8 @@ class PlanActivity : Activity() {
         if (force || now - lastGridAt > 150) {
             lastGridAt = now
             followFailed = false
-            surveyResult = if (mission && survey.size >= 3) runCatching { SurveyPlanner.plan(spec()) }.getOrNull()?.let(::followed) else null
+            plannerProblem = null
+            surveyResult = if (mission && survey.size >= (if (pattern == SurveyPattern.CORRIDOR) 2 else 3)) runCatching { SurveyPlanner.plan(spec()) }.onFailure { plannerProblem = it.message }.getOrNull()?.let(::followed) else null
             terrainDirty = true
         }
         area = when {
@@ -597,19 +707,24 @@ class PlanActivity : Activity() {
         }
 
         map.setArea(area)
-        map.setSurvey(if (mission) survey else null)
+        map.setSurvey(if (mission && pattern != SurveyPattern.CORRIDOR) survey else null)
         map.setMission(surveyResult?.plan?.waypoints?.map { it.position })
         map.setStart(surveyResult?.plan?.waypoints?.firstOrNull { !it.transit }?.position)
-        map.setHandles(if (mission) survey else listOfNotNull(center?.takeIf { boundary == null }), midpoints = mission && survey.size >= 3)
+        map.setHandles(if (mission) survey else listOfNotNull(center?.takeIf { boundary == null }), midpoints = mission && survey.size >= (if (pattern == SurveyPattern.CORRIDOR) 2 else 3), closed = pattern != SurveyPattern.CORRIDOR)
         map.setZones(graph.zones.index.value?.zones.orEmpty())
         map.setAircraftZones(graph.aircraftZones.value)
         map.setHome(center)
         map.setPilot(graph.deviceFix.value?.let { LatLng(it.lat, it.lng) })
         if (!fitted && map.ready) (area ?: (survey.takeIf { it.size >= 2 }) ?: center?.let { listOf(it) })?.let { map.fit(it, dp(40), dp(64), dp(40), dp(80)); fitted = true }
 
+        val mapMissing = !graph.maps.basemap.isFile && !graph.maps.imagery.isFile
+        mapHint.isClickable = mapMissing
         mapHint.setIfChanged(
             when {
+                mapMissing -> getString(R.string.plan_hint_map_missing)
                 !mission -> if (boundary != null) getString(R.string.plan_hint_imported, boundaryName ?: getString(R.string.plan_hint_imported_fallback)) else getString(R.string.plan_hint_move_takeoff)
+                pattern == SurveyPattern.CORRIDOR && survey.size < 2 -> getString(R.string.plan_corridor_add_point)
+                pattern == SurveyPattern.CORRIDOR -> getString(R.string.plan_hint_drag_corner)
                 survey.isEmpty() -> getString(R.string.plan_hint_first_corner)
                 survey.size < 3 -> getString(R.string.plan_hint_add_corner, survey.size + 1)
                 else -> getString(R.string.plan_hint_drag_corner)
@@ -630,12 +745,17 @@ class PlanActivity : Activity() {
             statLabels[i].setIfChanged(l)
         }
         if (mission) {
+            val experimental = graph.adapter.capabilities.value?.missionSupport == MissionSupport.VIRTUAL_STICK_EXPERIMENTAL
             val mins = r?.let { it.estimatedFlightTimeS / 60 }
-            val batteries = mins?.let { ceil(it / usableMinutes()).toInt().coerceAtLeast(1) }
-            stat(0, mins?.let { getString(R.string.plan_stat_minutes, it) } ?: "—", getString(R.string.plan_stat_flight_time))
-            stat(1, if (survey.size >= 3) hectares(survey) else "—", getString(R.string.plan_stat_area))
+            val batteries = if (experimental) null else mins?.let { ceil(it / usableMinutes()).toInt().coerceAtLeast(1) }
+            stat(0, mins?.let { (if (experimental) "≥ " else "") + getString(R.string.plan_stat_minutes, it) } ?: "—", getString(if (experimental) R.string.plan_stat_cruise_only else R.string.plan_stat_flight_time), warn = experimental)
+            val footprint = if (pattern == SurveyPattern.CORRIDOR && survey.size >= 2) {
+                val length = survey.zipWithNext { a, b -> Geo.distanceM(a,b) }.sum()
+                "≈ " + formatArea(length * routeWidth.current)
+            } else if (survey.size >= 3) hectares(survey) else "—"
+            stat(1, footprint, getString(R.string.plan_stat_area))
             stat(2, r?.let { getString(R.string.plan_stat_photos_value, photoEstimate(it)) } ?: "—", getString(R.string.plan_stat_photos))
-            stat(3, batteries?.toString() ?: "—", resources.getQuantityString(R.plurals.plan_stat_batteries, batteries ?: 0), warn = (batteries ?: 1) > 1)
+            stat(3, batteries?.toString() ?: "—", if (experimental) getString(R.string.plan_stat_battery_unmeasured) else resources.getQuantityString(R.plurals.plan_stat_batteries, batteries ?: 0), warn = experimental || (batteries ?: 1) > 1)
         } else {
             stat(0, area?.let { hectares(it) } ?: "—", getString(R.string.plan_stat_area))
             stat(1, if (boundary != null) getString(R.string.plan_stat_boundary) else getString(R.string.plan_value_m, radius.current), getString(if (boundary != null) R.string.plan_stat_imported else R.string.plan_stat_radius))
@@ -646,17 +766,23 @@ class PlanActivity : Activity() {
 
     private fun renderTexts(legal: Double) {
         val r = surveyResult
+        importButton.label.text = getString(if (compactImport) R.string.plan_import_short else if (mission && pattern == SurveyPattern.CORRIDOR) R.string.plan_import_line else R.string.plan_import)
         altitudeHint.setIfChanged(
-            r?.let { if (pattern == SurveyPattern.PERIMETER) getString(R.string.plan_gsd_perimeter, it.gsdCm) else resources.getQuantityString(R.plurals.plan_gsd_lines, it.lineCount, it.gsdCm, it.lineCount) }
-                ?: getString(R.string.plan_gsd, gsdAt(altitude.current)),
+            camera().name + " · " + (r?.let { if (pattern == SurveyPattern.PERIMETER) getString(R.string.plan_gsd_perimeter, it.gsdCm) else resources.getQuantityString(R.plurals.plan_gsd_lines, it.lineCount, it.gsdCm, it.lineCount) }
+                ?: getString(R.string.plan_gsd, gsdAt(altitude.current))),
         )
         patternHint.setIfChanged(
             when (pattern) {
                 SurveyPattern.GRID -> getString(R.string.plan_pattern_grid_hint)
                 SurveyPattern.CROSSHATCH -> getString(R.string.plan_pattern_crosshatch_hint)
                 SurveyPattern.PERIMETER -> getString(R.string.plan_pattern_perimeter_hint)
+                SurveyPattern.FIVE_DIRECTION -> getString(R.string.plan_pattern_five_hint)
+                SurveyPattern.CORRIDOR -> getString(R.string.plan_pattern_corridor_hint)
+                SurveyPattern.SURROUND -> getString(R.string.plan_pattern_surround_hint)
             },
         )
+        widthRow.show(pattern == SurveyPattern.CORRIDOR || pattern == SurveyPattern.SURROUND)
+        topRow.show(pattern == SurveyPattern.SURROUND); layerRow.show(pattern == SurveyPattern.SURROUND)
         headingRow.show(pattern != SurveyPattern.PERIMETER)
         sideOverlapRow.show(pattern != SurveyPattern.PERIMETER)
         val terrainFile = graph.terrain != null
@@ -680,7 +806,7 @@ class PlanActivity : Activity() {
         if (signInButton?.label?.text?.toString() != signInLabel) signInButton?.set(signInLabel, null, Kind.SECONDARY)
         pilotSpinner.show(session == null)
         val pilot = session?.let { signedInName(it) } ?: pilots.getOrNull(pilotSpinner.selectedItemPosition)?.name ?: getString(R.string.plan_no_pilot)
-        val ac = aircraft.getOrNull(aircraftSpinner.selectedItemPosition)?.registration ?: getString(R.string.plan_no_aircraft)
+        val ac = aircraft.getOrNull(aircraftSpinner.selectedItemPosition)?.let { it.registration.ifBlank { it.label } } ?: getString(R.string.plan_no_aircraft)
         val whenText = if (startMs <= graph.clock.nowMs() + 60_000) getString(R.string.plan_when_now) else DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(startMs))
         detailsSummary.setIfChanged(
             getString(
@@ -700,8 +826,8 @@ class PlanActivity : Activity() {
 
         val a = area
         val utm = StringBuilder()
-        var problem: String? = null
-        if (a == null) problem = getString(if (mission) R.string.plan_problem_corners else R.string.plan_problem_takeoff)
+        var problem: String? = if (mission) plannerProblem else null
+        if (a == null) problem = problem ?: getString(if (mission) R.string.plan_problem_corners else R.string.plan_problem_takeoff)
         r?.let { res ->
             val parts = MissionValidator.split(res.plan, missionLimits()).size
             if (parts > 1) utm.appendLine(resources.getQuantityString(R.plurals.plan_utm_parts, parts, parts, missionLimits().maxWaypoints))
@@ -727,6 +853,8 @@ class PlanActivity : Activity() {
         terrainText.setTextColor(color(if (terrainWarn) R.color.warn else R.color.text2))
         if (terrainBlock != null) problem = problem ?: terrainBlock
         if (login?.required == true && session == null) problem = problem ?: getString(R.string.plan_problem_sign_in)
+        if (session == null && pilots.getOrNull(pilotSpinner.selectedItemPosition) == null) problem = problem ?: getString(R.string.plan_refuse_no_pilots)
+        if (aircraft.getOrNull(aircraftSpinner.selectedItemPosition) == null) problem = problem ?: getString(R.string.plan_refuse_no_aircraft)
         footerNote.setIfChanged(problem ?: getString(if (graph.service.status.value.online) R.string.plan_footer_online else R.string.plan_footer_offline))
         footerNote.setTextColor(color(if (problem != null) R.color.warn else R.color.text2))
         declareButton.isEnabled = problem == null
@@ -758,8 +886,10 @@ class PlanActivity : Activity() {
         val lat0 = Math.toRadians(ring.map { it.lat }.average())
         val pts = ring.map { Math.toRadians(it.lng) * cos(lat0) * 6_371_000.0 to Math.toRadians(it.lat) * 6_371_000.0 }
         val m2 = abs(pts.indices.sumOf { i -> val (x1, y1) = pts[i]; val (x2, y2) = pts[(i + 1) % pts.size]; x1 * y2 - x2 * y1 }) / 2
-        return if (m2 >= 1_000_000) getString(R.string.plan_area_km2, m2 / 1e6) else if (m2 >= 100_000) getString(R.string.plan_area_ha_whole, m2 / 1e4) else getString(R.string.plan_area_ha, m2 / 1e4)
+        return formatArea(m2)
     }
+
+    private fun formatArea(m2: Double): String = if (m2 >= 1_000_000) getString(R.string.plan_area_km2, m2 / 1e6) else if (m2 >= 100_000) getString(R.string.plan_area_ha_whole, m2 / 1e4) else getString(R.string.plan_area_ha, m2 / 1e4)
 
     /** The route (mission) or area (manual) against the terrain model, from the planned take-off point. */
     private fun terrainReport(): TerrainReport? {
@@ -948,13 +1078,39 @@ class PlanActivity : Activity() {
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode != REQ_KML || resultCode != RESULT_OK) return
+        if (resultCode != RESULT_OK) return
         val uri = data?.data ?: return
+        if (requestCode == REQ_PLAN_EXPORT) {
+            runCatching {
+                val plan = checkNotNull(exporting) { getString(R.string.plan_draft_failed) }
+                checkNotNull(contentResolver.openOutputStream(uri)).use { it.write(library.encode(plan).toByteArray(Charsets.UTF_8)) }
+                exporting = null
+            }.onFailure { refuse(it.message ?: getString(R.string.plan_draft_failed)) }
+            return
+        }
+        if (requestCode == REQ_PLAN_IMPORT) {
+            runCatching {
+                val buffer = java.io.ByteArrayOutputStream()
+                checkNotNull(contentResolver.openInputStream(uri)).use { input ->
+                    val block = ByteArray(4096)
+                    while (true) {
+                        val n = input.read(block); if (n < 0) break
+                        require(buffer.size() + n <= 512_000) { getString(R.string.plan_draft_failed) }
+                        buffer.write(block, 0, n)
+                    }
+                }
+                // Give an imported copy its own identity: importing never overwrites a local plan.
+                library.decode(buffer.toString("UTF-8")).copy(id = UUID.randomUUID().toString()).also { library.save(it); loadDraft(it) }
+            }.onFailure { refuse(it.message ?: getString(R.string.plan_draft_failed)) }
+            return
+        }
+        if (requestCode != REQ_KML) return
         runCatching {
             val bytes = contentResolver.openInputStream(uri)!!.use { it.readBytes() }
-            Kml.read(bytes).firstOrNull { it.polygon != null } ?: error(getString(R.string.plan_kml_no_polygon))
+            Kml.read(bytes).firstOrNull { if (mission && pattern == SurveyPattern.CORRIDOR) it.line != null else it.polygon != null }
+                ?: error(getString(if (mission && pattern == SurveyPattern.CORRIDOR) R.string.plan_kml_no_line else R.string.plan_kml_no_polygon))
         }.onSuccess { pm ->
-            val ring = pm.polygon!!
+            val ring = if (mission && pattern == SurveyPattern.CORRIDOR) pm.line!! else pm.polygon!!
             if (mission) {
                 pushUndo()
                 survey.clear()
@@ -988,5 +1144,7 @@ class PlanActivity : Activity() {
 
     private companion object {
         const val REQ_KML = 7
+        const val REQ_PLAN_IMPORT = 8
+        const val REQ_PLAN_EXPORT = 9
     }
 }

@@ -76,6 +76,7 @@ object WpmlWriter {
     }
 
     fun template(plan: MissionPlan, target: WpmlTarget, nowMs: Long): String = document {
+        val layout = actionLayout(plan)
         line(2, "<wpml:author>OpenUTM Flight</wpml:author>")
         line(2, "<wpml:createTime>$nowMs</wpml:createTime>")
         line(2, "<wpml:updateTime>$nowMs</wpml:updateTime>")
@@ -117,13 +118,14 @@ object WpmlWriter {
                 line(4, "</wpml:waypointHeadingParam>")
             }
             line(4, "<wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>")
-            actionGroups(4, plan, target, i)
+            actionGroups(4, plan, target, i, layout)
             line(3, "</Placemark>")
         }
         line(2, "</Folder>")
     }
 
     fun waylines(plan: MissionPlan, target: WpmlTarget): String = document {
+        val layout = actionLayout(plan)
         missionConfig(plan, target)
         line(2, "<Folder>")
         line(3, "<wpml:templateId>0</wpml:templateId>")
@@ -146,7 +148,7 @@ object WpmlWriter {
             line(5, "<wpml:waypointTurnDampingDist>0</wpml:waypointTurnDampingDist>")
             line(4, "</wpml:waypointTurnParam>")
             line(4, "<wpml:useStraightLine>1</wpml:useStraightLine>")
-            actionGroups(4, plan, target, i)
+            actionGroups(4, plan, target, i, layout)
             line(3, "</Placemark>")
         }
         line(2, "</Folder>")
@@ -205,29 +207,50 @@ object WpmlWriter {
 
     /**
      * The action groups that start at waypoint [index], numbered across the file:
-     * 0 = gimbal pitch at the first waypoint, 1 = distance-interval photos (if any) from the first to
-     * the last survey waypoint (travel legs excluded), then one per waypoint photo in waypoint order.
+     * 0 = initial gimbal pitch; contiguous survey photo runs, explicit photographs and changed
+     * pitches receive compact unique IDs. Transit vertices never extend a distance-photo run.
      */
-    private fun Xml.actionGroups(indent: Int, plan: MissionPlan, target: WpmlTarget, index: Int) {
-        val surveyStart = plan.waypoints.indexOfFirst { !it.transit }.coerceAtLeast(0)
-        val surveyEnd = plan.waypoints.indexOfLast { !it.transit }.takeIf { it >= 0 } ?: plan.waypoints.lastIndex
-        val interval = plan.photoDistanceIntervalM?.takeIf { it > 0 && surveyEnd > surveyStart }
+    private data class ActionLayout(val runs: Map<Int, Pair<Int, IntRange>>, val interval: Double?, val photos: Map<Int, Int>, val pitches: Map<Int, Int>)
+
+    private fun actionLayout(plan: MissionPlan): ActionLayout {
+        require(plan.waypoints.size >= 2)
+        val runs = ArrayList<IntRange>()
+        var start = -1
+        for (i in 0..plan.waypoints.size) {
+            if (i < plan.waypoints.size && !plan.waypoints[i].transit) { if (start < 0) start = i }
+            else if (start >= 0) { if (i - start >= 2) runs += start until i; start = -1 }
+        }
+        val interval = plan.photoDistanceIntervalM?.takeIf { it.isFinite() && it > 0 && runs.isNotEmpty() }
+        var nextId = 1
+        val indexedRuns = if (interval == null) emptyMap() else runs.associate { it.first to (nextId++ to it) }
+        val photos = plan.waypoints.indices.filter { plan.waypoints[it].takePhoto }.associateWith { nextId++ }
+        var pitch = plan.waypoints.first().gimbalPitchDeg ?: plan.gimbalPitchDeg
+        val pitches = LinkedHashMap<Int, Int>()
+        plan.waypoints.forEachIndexed { i, w ->
+            w.gimbalPitchDeg?.let { p -> if (i > 0 && p != pitch) pitches[i] = nextId++; pitch = p }
+        }
+        require(nextId <= 65_536) { "too many camera action groups; split this mission" }
+        return ActionLayout(indexedRuns, interval, photos, pitches)
+    }
+
+    private fun Xml.actionGroups(indent: Int, plan: MissionPlan, target: WpmlTarget, index: Int, layout: ActionLayout) {
         if (index == 0) {
             group(indent, id = 0, start = 0, end = 0, trigger = "reachPoint", triggerParam = null) {
-                gimbalPitch(indent + 2, 0, target, plan.gimbalPitchDeg)
+                gimbalPitch(indent + 2, 0, target, plan.waypoints[0].gimbalPitchDeg ?: plan.gimbalPitchDeg)
             }
         }
-        if (index == surveyStart && interval != null) {
-            group(indent, id = 1, start = surveyStart, end = surveyEnd, trigger = "multipleDistance", triggerParam = interval) {
+        layout.pitches[index]?.let { id ->
+            group(indent, id, index, index, "reachPoint", null) {
+                gimbalPitch(indent + 2, 0, target, plan.waypoints[index].gimbalPitchDeg!!)
+            }
+        }
+        layout.runs[index]?.let { (id, run) ->
+            group(indent, id, run.first, run.last, "multipleDistance", layout.interval) {
                 takePhoto(indent + 2, 0, target)
             }
         }
-        if (plan.waypoints[index].takePhoto) {
-            val firstId = if (interval != null) 2 else 1
-            val id = firstId + plan.waypoints.subList(0, index).count { it.takePhoto }
-            group(indent, id = id, start = index, end = index, trigger = "reachPoint", triggerParam = null) {
-                takePhoto(indent + 2, 0, target)
-            }
+        layout.photos[index]?.let { id ->
+            group(indent, id, index, index, "reachPoint", null) { takePhoto(indent + 2, 0, target) }
         }
     }
 

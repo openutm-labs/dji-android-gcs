@@ -215,7 +215,7 @@ class MigrationFeaturesTest {
     private class Adapter : DroneAdapter {
         val op = Op()
         override val link = MutableStateFlow<LinkState>(LinkState.Connected(AircraftIdentity("SN1", "Mavic 3 Enterprise")))
-        override val capabilities: StateFlow<DroneCapabilities?> = MutableStateFlow(DroneCapabilities("Mavic 3 Enterprise", MissionSupport.WPML, MissionLimits.WPML, false, 10))
+        override val capabilities: StateFlow<DroneCapabilities?> = MutableStateFlow(DroneCapabilities("Mavic 3 Enterprise", MissionSupport.WPML, MissionLimits.WPML, false, 10, camera = CameraModel.MAVIC_3E))
         override val states: SharedFlow<DroneState> = MutableSharedFlow()
         override fun missionOperator(): MissionOperator = op
         override fun start() = Unit

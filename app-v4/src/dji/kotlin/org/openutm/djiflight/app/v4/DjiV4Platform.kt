@@ -27,7 +27,7 @@ object DjiV4Platform : Platform {
     override val defaultMissionLimits = MissionLimits.WAYPOINT_V1
     override val defaultCamera = CameraModel.P4P_V2
 
-    override fun createAdapter(context: Context, scope: CoroutineScope): DroneAdapter = DjiV4Adapter(context) { Log.i("DjiV4Adapter", it) }
+    override fun createAdapter(context: Context, scope: CoroutineScope): DroneAdapter = DjiV4Adapter(context, enableMini2Survey = BuildConfig.DEBUG && BuildConfig.MINI2_SURVEY_EXPERIMENTAL) { Log.i("DjiV4Adapter", it) }
 
     override fun extraStatus(adapter: DroneAdapter): String? = "SDK ${(adapter as DjiV4Adapter).registration.value}"
 
@@ -67,7 +67,9 @@ class UxCameraView : VideoPreview {
     private var root: View? = null
     private var compactNow = false
     private var panelListener: ((Boolean) -> Unit)? = null
-    override val panelOpen: Boolean get() = !compactNow && (root as? ViewGroup)?.let { r ->
+    // Status widgets outside the camera can open a panel while the camera is an inset.
+    // Report it in compact mode too so Fly can expand the camera before showing its controls.
+    override val panelOpen: Boolean get() = (root as? ViewGroup)?.let { r ->
         PANEL_WINDOWS.any { r.findViewById<View>(it)?.visibility == View.VISIBLE }
     } == true
 

@@ -188,10 +188,10 @@ class MapController(context: Context, private val basemap: () -> File?, private 
     fun setStart(p: LatLng?) = set("start", p?.takeIf { it.isValid }?.let { point(it) } ?: EMPTY)
 
     /** The polygon's corner handles, and with [midpoints] a "+" handle on each edge. */
-    fun setHandles(corners: List<LatLng>?, midpoints: Boolean) {
+    fun setHandles(corners: List<LatLng>?, midpoints: Boolean, closed: Boolean = true) {
         val c = corners.orEmpty()
         set("vertices", if (c.isEmpty()) EMPTY else fc(c.map { feature(pointGeometry(it)) }))
-        set("midpoints", if (!midpoints || c.size < 2) EMPTY else fc(edges(c).map { (a, b) -> feature(pointGeometry(LatLng((a.lat + b.lat) / 2, (a.lng + b.lng) / 2))) }))
+        set("midpoints", if (!midpoints || c.size < 2) EMPTY else fc(edges(c, closed).map { (a, b) -> feature(pointGeometry(LatLng((a.lat + b.lat) / 2, (a.lng + b.lng) / 2))) }))
     }
 
     fun center(p: LatLng, zoom: Double = 15.5) {
@@ -227,6 +227,7 @@ class MapController(context: Context, private val basemap: () -> File?, private 
         fun corners(): List<LatLng>
         /** Edge "+" handles: insert a corner after index [afterIndex]. */
         val insertable: Boolean
+        val closed: Boolean get() = true
         fun insert(afterIndex: Int, p: LatLng)
         /** A corner is being dragged ([done] = finger lifted). */
         fun move(index: Int, p: LatLng, done: Boolean)
@@ -253,7 +254,7 @@ class MapController(context: Context, private val basemap: () -> File?, private 
                     dragging = when {
                         hit >= 0 -> hit
                         ed.insertable && corners.size >= 2 -> {
-                            val mids = edges(corners).map { (a, b) -> LatLng((a.lat + b.lat) / 2, (a.lng + b.lng) / 2) }
+                            val mids = edges(corners, ed.closed).map { (a, b) -> LatLng((a.lat + b.lat) / 2, (a.lng + b.lng) / 2) }
                             val e = nearest(m, mids, ev.x, ev.y, 24 * density)
                             if (e >= 0) { ed.insert(e, mids[e]); e + 1 } else -1
                         }
@@ -290,8 +291,8 @@ class MapController(context: Context, private val basemap: () -> File?, private 
         return best
     }
 
-    private fun edges(c: List<LatLng>): List<Pair<LatLng, LatLng>> =
-        if (c.size < 3) c.zipWithNext() else c.indices.map { c[it] to c[(it + 1) % c.size] }
+    private fun edges(c: List<LatLng>, closed: Boolean = true): List<Pair<LatLng, LatLng>> =
+        if (!closed || c.size < 3) c.zipWithNext() else c.indices.map { c[it] to c[(it + 1) % c.size] }
 
     fun onStart() = view.onStart()
     fun onResume() = view.onResume()

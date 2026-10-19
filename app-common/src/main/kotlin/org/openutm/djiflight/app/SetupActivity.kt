@@ -26,6 +26,8 @@ import org.openutm.djiflight.app.ui.topBar
 import org.openutm.djiflight.core.geo.Geo
 import org.openutm.djiflight.core.provisioning.AuthConfig
 import org.openutm.djiflight.core.provisioning.DeviceProvisioning
+import org.openutm.djiflight.core.provisioning.PanamaDeployment
+import org.openutm.djiflight.core.provisioning.LabAircraft
 import org.openutm.djiflight.core.provisioning.ProvisioningCodec
 import org.openutm.djiflight.core.sync.BackendResult
 import org.openutm.djiflight.core.update.Release
@@ -57,6 +59,7 @@ class SetupActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_setup)
+        if (intent.getStringExtra("section") == "maps") section = Section.MAPS
         graph.start(this)
         val bar = topBar(getString(R.string.setup_title)) { finish() }
         findViewById<LinearLayout>(R.id.topBar).addView(bar, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
@@ -93,7 +96,12 @@ class SetupActivity : Activity() {
         val p = graph.provisioning.value
         heading(getString(R.string.setup_section_device))
         if (p == null) {
-            body(getString(R.string.setup_not_set_up))
+            if (graph.platform.isSimulation) body(getString(R.string.setup_not_set_up))
+            else {
+                row(getString(R.string.setup_row_utm_server), PanamaDeployment.BLENDER_URL)
+                body(getString(R.string.setup_panama_default))
+                button(getString(R.string.setup_panama_manual), R.drawable.ic_sliders, Kind.PRIMARY) { panamaSetup() }
+            }
         } else {
             content.addView(Pill(this, 15f).apply { set(getString(if (justSetUp) R.string.setup_pill_ready else R.string.setup_pill_set_up), Pill.Tone.OK) },
                 LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(8) })
@@ -130,7 +138,9 @@ class SetupActivity : Activity() {
             startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"), REQ_PROVISION_FILE)
         }
         tile(getString(R.string.setup_tile_scan), getString(R.string.setup_tile_scan_hint), R.drawable.ic_qr) {
-            IntentIntegrator(this).setDesiredBarcodeFormats(IntentIntegrator.QR_CODE).setPrompt(getString(R.string.setup_scan_prompt)).setBeepEnabled(false).setOrientationLocked(false).initiateScan()
+            IntentIntegrator(this).setCaptureActivity(ProvisioningQrActivity::class.java)
+                .setDesiredBarcodeFormats(IntentIntegrator.QR_CODE).setPrompt(getString(R.string.setup_scan_prompt))
+                .setBeepEnabled(false).setOrientationLocked(false).initiateScan()
         }
         tile(getString(R.string.setup_tile_paste), getString(R.string.setup_paste_hint), R.drawable.ic_paste) {
             val input = EditText(this).apply {
@@ -152,6 +162,104 @@ class SetupActivity : Activity() {
                 setOnClickListener { apply(graph.devProvisioning()) }
             })
         }
+    }
+
+    /** Public server defaults plus private credentials entered by this device's administrator. */
+    private fun panamaSetup() {
+        val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        fun field(label: Int, initial: String = "", secret: Boolean = false, numeric: Boolean = false): EditText {
+            form.addView(text(14f, R.color.text2).apply { text = getString(label); setPadding(0, dp(10), 0, dp(4)) })
+            return EditText(this).apply {
+                setText(initial)
+                setTextColor(color(R.color.text)); setHintTextColor(color(R.color.text3)); textSize = 16f
+                setSingleLine(true)
+                inputType = when {
+                    secret -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+                    numeric -> android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+                    else -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                }
+                imeOptions = android.view.inputmethod.EditorInfo.IME_FLAG_NO_EXTRACT_UI
+                isSaveEnabled = false
+                if (Build.VERSION.SDK_INT >= 26) importantForAutofill = android.view.View.IMPORTANT_FOR_AUTOFILL_NO
+                form.addView(this, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(50)))
+            }
+        }
+        val connected = (graph.service.status.value.link as? org.openutm.djiflight.core.adapter.LinkState.Connected)?.identity
+        val device = field(R.string.setup_row_device, "${Build.MODEL}-${java.util.UUID.randomUUID().toString().take(6)}")
+        val operator = field(R.string.setup_row_operator)
+        val pilot = field(R.string.setup_panama_pilot)
+        val clientId = field(R.string.setup_panama_client_id)
+        val clientSecret = field(R.string.setup_panama_client_secret, secret = true)
+        val limit = field(R.string.setup_panama_height, "120", numeric = true)
+        form.addView(Sheet.note(this, getString(R.string.setup_panama_aircraft_note)))
+        val serial = field(R.string.setup_panama_serial, connected?.serial ?: "")
+        val model = field(R.string.setup_panama_model, connected?.model ?: "")
+        val registration = field(R.string.setup_panama_registration)
+        val status = text(14f, R.color.warn).apply {
+            setPadding(0, dp(10), 0, 0)
+            maxLines = 3
+            ellipsize = android.text.TextUtils.TruncateAt.END
+        }
+        lateinit var connect: ActionButton
+        var checking: kotlinx.coroutines.Job? = null
+        val sheet = Sheet(this, wide = true).title(getString(R.string.setup_panama_manual))
+            .message(getString(R.string.setup_panama_credentials_note))
+            .body(Sheet.row(this, getString(R.string.setup_row_utm_server), PanamaDeployment.BLENDER_URL))
+            .body(form).footer(status)
+        sheet.button(getString(R.string.setup_cancel))
+            .button(getString(R.string.setup_panama_connect), Kind.PRIMARY, dismiss = false, ref = { connect = it }) {
+                val height = limit.text.toString().replace(',', '.').toDoubleOrNull()
+                if (height == null) {
+                    status.text = getString(R.string.setup_panama_invalid_height)
+                    return@button
+                }
+                val sn = serial.text.toString().trim()
+                if (sn.isEmpty() && (model.text.isNotBlank() || registration.text.isNotBlank())) {
+                    status.text = getString(R.string.setup_panama_serial_required)
+                    return@button
+                }
+                val candidate = runCatching {
+                    PanamaDeployment.deviceSetup(
+                        device.text.toString(), operator.text.toString(), pilot.text.toString(),
+                        clientId.text.toString(), clientSecret.text.toString(),
+                        aircraft = if (sn.isNotEmpty()) LabAircraft(sn, registration.text.toString().trim(), model.text.toString().trim()) else null,
+                        legalMaxHeightM = height,
+                    )
+                }.getOrElse { status.text = getString(R.string.setup_panama_pilot_required); return@button }
+                val problems = candidate.problems(allowDevAuth = false)
+                if (problems.isNotEmpty()) { status.text = problems.joinToString("\n"); return@button }
+                connect.isEnabled = false
+                status.text = getString(R.string.setup_panama_checking)
+                checking = ui.launch {
+                    try {
+                        val result = graph.checkProvisioning(candidate)
+                        if (!sheet.isShowing) return@launch
+                        when (result) {
+                            is BackendResult.Ok -> {
+                                val refused = graph.provision(candidate)
+                                if (refused.isNotEmpty()) status.text = refused.joinToString("\n")
+                                else {
+                                    justSetUp = true
+                                    sheet.dismiss()
+                                    render()
+                                    toast(getString(R.string.setup_panama_connected))
+                                }
+                            }
+                            else -> {
+                                val reason = when (result) {
+                                    is BackendResult.Rejected -> result.message
+                                    is BackendResult.Transient -> result.message
+                                    is BackendResult.Unauthorized -> result.message
+                                    is BackendResult.WindowClosed -> result.message
+                                    is BackendResult.NotActivated -> result.message
+                                    is BackendResult.Ok -> ""
+                                }
+                                status.text = getString(R.string.setup_panama_failed, reason)
+                            }
+                        }
+                    } finally { if (sheet.isShowing) connect.isEnabled = true }
+                }
+            }.onDismiss { checking?.cancel(); clientSecret.text.clear() }.show()
     }
 
     private fun maps() {

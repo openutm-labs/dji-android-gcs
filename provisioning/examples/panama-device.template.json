@@ -1,0 +1,19 @@
+{
+  "v": 1,
+  "device_name": "",
+  "blender_url": "https://blender.panama.openutm.net",
+  "auth": {
+    "type": "client_credentials",
+    "token_url": "https://auth.panama.openutm.net/oauth/token/",
+    "client_id": "",
+    "client_secret": "",
+    "scope": "flightblender.read flightblender.write",
+    "audience": "blender.panama.openutm.net"
+  },
+  "lab": "Panama Flying Labs",
+  "operator_id": "",
+  "country": "PA",
+  "legal_max_height_m": 0,
+  "pilots": [],
+  "aircraft": []
+}

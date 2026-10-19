@@ -4,6 +4,8 @@
 
 Order: controller facts first, then the bench with props off in DJI's simulator, then first flights, then a full survey. Don't move to the next stage until the one before has passed.
 
+For the 0.5.0 development expansion, run the separate [Mini 2 qualification gates](15-survey-expansion-and-mini2.md#qualification-gates). The 0.4.0 native-mission checks below do not establish Virtual Stick qualification.
+
 ## Before you start
 
 **People:** a pilot and a second person who watches the aircraft and fills in the sheet.
@@ -43,7 +45,7 @@ Order: controller facts first, then the bench with props off in DJI's simulator,
 
 ## Stage 1: bench, props off, DJI's simulator
 
-Aircraft on USB or connected, DJI simulator on: DJI Assistant 2 for v4, DJI's simulator control in the v5 app.
+Aircraft on USB or connected, DJI simulator on only where the exact model supports it: DJI Assistant 2 or the Mobile SDK simulator for v4, DJI's simulator control in the v5 app. Mini 2 needs the separate SDK simulator check in [the experimental procedure](15-survey-expansion-and-mini2.md#developer-sdk-simulator-bench); Assistant installation is not evidence of simulator support.
 
 | # | Check | How | Pass |
 |---|---|---|---|

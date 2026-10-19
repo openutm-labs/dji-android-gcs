@@ -5,9 +5,20 @@ An Android ground control station (GCS) for DJI drones, connecting to OpenUTM, b
 - **Design and decisions:** [docs/12-dji-app-design.md](docs/12-dji-app-design.md)
 - **Background (DJI integration options):** [docs/11-dji-integration.md](docs/11-dji-integration.md)
 - **DroneDeploy: integration and pilot migration:** [docs/13-dronedeploy.md](docs/13-dronedeploy.md)
+- **Survey expansion and Mini 2 qualification:** [docs/15-survey-expansion-and-mini2.md](docs/15-survey-expansion-and-mini2.md)
+- **Panama distribution installers (0.5.3):** [install, configure and share](docs/17-panama-apk-distribution.md)
+- **Connect a phone to Panama:** [docs/16-connect-panama.md](docs/16-connect-panama.md)
 - **Bench and field test plan:** [docs/14-dji-field-test-plan.md](docs/14-dji-field-test-plan.md)
 
-**Status (2026-10-18, 0.4.0):** two apps, all screens built and redesigned (docs/12, The app); not yet flown with a real aircraft.
+**Panama distribution update (2026-10-19, 0.5.1):** signed release builds default to Panama in first-run setup, support private device credential entry with a protected-read check, and explain missing offline maps. Operator identities and OAuth secrets are supplied per device. Existing saved setups are preserved.
+
+**QR scanner fix (0.5.2):** provisioning uses app-owned outer and nested scanner layouts so DJI's incompatible `zxing_*` resources cannot replace JourneyApps views and crash on opening Scan QR code. The release smoke check now opens the real scan tile, checks all three view types and cancels back to setup.
+
+**Camera panel sizing fix (0.5.3):** a DJI checklist or settings panel opened while the camera is in the map's inset promotes the camera to the full stage. Panels keep their normal readable size, and the camera widget tree stays attached.
+
+**Development update (2026-10-19, 0.5.0):** five-direction, corridor and layered-surround planning; local saved plans; concave-area routing; network diagnostics; an explicitly opted-in debug-only Mini 2 Virtual Stick stop-and-shoot executor. All release builds keep Mini 2 automatic execution disabled pending hardware qualification. See [scope, limits and the remaining feature backlog](docs/15-survey-expansion-and-mini2.md). Broadcast Remote ID is excluded; this work targets Flight Blender network reporting.
+
+**Previous baseline (2026-10-18, 0.4.0):** two apps, all screens built and redesigned (docs/12, The app); not yet flown with a real aircraft.
 - **`app-v4`** (DJI MSDK v4.18): Phantom 4 Pro V2.0, Mavic 2 Pro, Air 2S, Mavic Air 2, Mini 2.
 - **`app-v5`** (DJI MSDK v5.18): Mavic 3 Enterprise, 3T and 3M; Matrice 400 with a P1, L2, H30 or H30T.
 - **Screens:** Fly, Plan (manual flights; Grid, Crosshatch and Perimeter surveys), Pre-flight (lab checklist, aircraft checks, settings, calibration, the take-off height choice), Flights (export), Setup (device setup, maps, terrain, zones, updates), pilot sign-in; shared by both apps. Laid out as DJI's apps are; landscape, full screen. Every string is an Android resource, ready for translation.
@@ -60,9 +71,10 @@ The Android modules are included only when an SDK is configured, via `ANDROID_HO
 ```
 
 Notes:
-- **Blender URL:** `-PBLENDER_URL=http://<laptop-ip>:8000` points a phone at the laptop's Blender. The default `10.0.2.2` is the host as seen from an emulator.
+- **Default deployment:** fresh DJI installs show Panama (`https://blender.panama.openutm.net`) and require private device credentials or a setup code. The simulator retains local-development onboarding.
+- **Development Blender URL:** `-PBLENDER_URL=http://<laptop-ip>:8000` sets the debug-only local-stack button; it does not change the Panama default. Its default `10.0.2.2` is the host as seen from an emulator.
 - **DJI app keys:** put `DJI_API_KEY` (for `org.openutm.djiflight.v4`) and `DJI_V5_API_KEY` (for `org.openutm.djiflight.v5`) in `~/.gradle/gradle.properties`, never in this repo. A DJI key is tied to one package name.
-- **Debug auth:** debug builds use the dev token, which Blender accepts only with `BYPASS_AUTH_TOKEN_VERIFICATION=1`. Release builds need a device setup with client credentials (below).
+- **Debug auth:** debug builds accept a dev token only when a local-development setup is explicitly selected. Blender must use `BYPASS_AUTH_TOKEN_VERIFICATION=1` for it. Panama and release builds use device client credentials (below).
 
 ## Set up a device (lab admins)
 Write the device's setup as JSON. Two optional fields help pilots coming from DroneDeploy (docs/13):

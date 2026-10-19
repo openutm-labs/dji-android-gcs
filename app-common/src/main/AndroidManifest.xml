@@ -42,6 +42,9 @@
             android:screenOrientation="sensorLandscape" />
         <activity android:name=".SetupActivity" android:label="Device setup" android:theme="@style/Theme.OpenUTM"
             android:screenOrientation="sensorLandscape" />
+        <activity android:name=".ProvisioningQrActivity" android:label="Scan device setup"
+            android:exported="false" android:theme="@style/Theme.OpenUTM"
+            android:screenOrientation="sensorLandscape" android:windowSoftInputMode="stateAlwaysHidden" />
         <activity android:name=".SignInActivity" android:label="Pilot sign-in" android:theme="@style/Theme.OpenUTM"
             android:screenOrientation="sensorLandscape" android:windowSoftInputMode="adjustResize" />
 

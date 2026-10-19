@@ -67,6 +67,9 @@ class WpmlSelfTestActivity : Activity() {
             Triple("m400-h30t-survey", pattern(SurveyPattern.GRID, CameraModel.ZENMUSE_H30_WIDE), WpmlTarget(WpmlTarget.MATRICE_400, 0, WpmlTarget.PAYLOAD_H30T, imageFormat = "wide")),
             Triple("m3e-crosshatch", pattern(SurveyPattern.CROSSHATCH, CameraModel.MAVIC_3E), WpmlTarget.MAVIC_3E),
             Triple("m3e-perimeter", pattern(SurveyPattern.PERIMETER, CameraModel.MAVIC_3E), WpmlTarget.MAVIC_3E),
+            Triple("m3e-five-direction", pattern(SurveyPattern.FIVE_DIRECTION, CameraModel.MAVIC_3E), WpmlTarget.MAVIC_3E),
+            Triple("m3e-corridor", pattern(SurveyPattern.CORRIDOR, CameraModel.MAVIC_3E), WpmlTarget.MAVIC_3E),
+            Triple("m3e-surround", pattern(SurveyPattern.SURROUND, CameraModel.MAVIC_3E), WpmlTarget.MAVIC_3E),
             Triple("m3e-terrain-follow", followed, WpmlTarget.MAVIC_3E),
             Triple("m3e-terrain-part", part, WpmlTarget.MAVIC_3E),
             Triple(

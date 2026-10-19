@@ -16,6 +16,7 @@ import dji.sdk.media.MediaFile
 import dji.sdk.products.Aircraft
 import dji.sdk.sdkmanager.DJISDKInitEvent
 import dji.sdk.sdkmanager.DJISDKManager
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -58,7 +59,7 @@ sealed interface Registration {
  * Callbacks are re-registered whenever the product or a component reconnects (battery swap,
  * flight controller reboot), and whenever the core's watchdog calls [resubscribe] (launch-risks B4).
  */
-class DjiV4Adapter(private val context: Context, private val log: (String) -> Unit = {}) : DroneAdapter {
+class DjiV4Adapter(private val context: Context, private val enableMini2Survey: Boolean = false, private val log: (String) -> Unit = {}) : DroneAdapter {
     private val _link = MutableStateFlow<LinkState>(LinkState.Disconnected)
     override val link: StateFlow<LinkState> = _link.asStateFlow()
     private val _caps = MutableStateFlow<DroneCapabilities?>(null)
@@ -74,6 +75,10 @@ class DjiV4Adapter(private val context: Context, private val log: (String) -> Un
     /** JPEGs the camera reported since start; counts across reconnects (battery swaps). */
     private val photos = java.util.concurrent.atomic.AtomicInteger(0)
     private var missions: DjiV4MissionOperator? = null
+    @Volatile private var stickTelemetry: Pair<Long, DroneState>? = null
+    private val stickScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val stickMission by lazy { org.openutm.djiflight.core.mission.VirtualStickMission(
+        Mini2VirtualStickPort({ DJISDKManager.getInstance().product as? Aircraft }, { stickTelemetry }), stickScope) }
     private val setup by lazy {
         DjiV4AircraftSetup(CoroutineScope(SupervisorJob() + Dispatchers.Default), { DJISDKManager.getInstance().product as? Aircraft }, log)
     }
@@ -85,6 +90,8 @@ class DjiV4Adapter(private val context: Context, private val log: (String) -> Un
     }
 
     override fun stop() {
+        stickScope.launch { if (enableMini2Survey) stickMission.stop() }
+        stickTelemetry = null
         fc?.setStateCallback(null)
         fc = null
         DJISDKManager.getInstance().stopConnectionToProduct()
@@ -137,6 +144,7 @@ class DjiV4Adapter(private val context: Context, private val log: (String) -> Un
     }
 
     override fun missionOperator(): MissionOperator? {
+        if (_caps.value?.missionSupport == MissionSupport.VIRTUAL_STICK_EXPERIMENTAL) return stickMission
         if (_caps.value?.missionSupport != MissionSupport.WAYPOINT_V1) return null
         return missions ?: DjiV4MissionOperator().also { missions = it }
     }
@@ -171,6 +179,10 @@ class DjiV4Adapter(private val context: Context, private val log: (String) -> Un
     }
 
     private fun detach() {
+        stickTelemetry = null
+        batteryPercent = null
+        _caps.value = null
+        stickScope.launch { if (enableMini2Survey) stickMission.stop() }
         fc?.setStateCallback(null)
         fc = null
         _link.value = if (_registration.value == Registration.Registered) LinkState.Connecting else LinkState.Disconnected
@@ -217,8 +229,8 @@ class DjiV4Adapter(private val context: Context, private val log: (String) -> Un
         val waypointV1 = identity.model in WAYPOINT_V1_MODELS
         _caps.value = DroneCapabilities(
             model = identity.model,
-            missionSupport = if (waypointV1) MissionSupport.WAYPOINT_V1 else MissionSupport.NONE,
-            missionLimits = if (waypointV1) MissionLimits.WAYPOINT_V1 else null,
+            missionSupport = if (waypointV1) MissionSupport.WAYPOINT_V1 else if (enableMini2Survey && identity.model in setOf("DJI Mini 2", "Mini 2")) MissionSupport.VIRTUAL_STICK_EXPERIMENTAL else MissionSupport.NONE,
+            missionLimits = if (waypointV1) MissionLimits.WAYPOINT_V1 else if (enableMini2Survey && identity.model in setOf("DJI Mini 2", "Mini 2")) MissionLimits.WAYPOINT_V1.copy(maxWaypoints = 2_000) else null,
             hasRtk = rtk != null,
             nativeRateHz = 10,
             camera = CAMERAS[identity.model],
@@ -229,8 +241,7 @@ class DjiV4Adapter(private val context: Context, private val log: (String) -> Un
     private fun onState(st: FlightControllerState) {
         val loc = st.aircraftLocation
         val home = st.homeLocation?.takeIf { st.isHomeLocationSet }?.let { LatLng(it.latitude, it.longitude) }
-        _states.tryEmit(
-            DroneState(
+        val sample = DroneState(
                 timeMs = System.currentTimeMillis(),
                 lat = loc?.latitude ?: Double.NaN,
                 lng = loc?.longitude ?: Double.NaN,
@@ -249,8 +260,9 @@ class DjiV4Adapter(private val context: Context, private val log: (String) -> Un
                 rtk = rtk,
                 batteryPercent = batteryPercent,
                 photoCount = photos.get(),
-            ),
-        )
+            )
+        stickTelemetry = android.os.SystemClock.elapsedRealtime() to sample
+        _states.tryEmit(sample)
     }
 
     companion object {
@@ -258,6 +270,7 @@ class DjiV4Adapter(private val context: Context, private val log: (String) -> Un
         val CAMERAS = mapOf(
             "Phantom 4 Pro" to CameraModel.P4P_V2, "Phantom 4 Pro V2.0" to CameraModel.P4P_V2, "Phantom 4 Advanced" to CameraModel.P4P_V2,
             "Mavic 2 Pro" to CameraModel.MAVIC_2_PRO,
+            "DJI Mini 2" to CameraModel.MINI_2, "Mini 2" to CameraModel.MINI_2,
         )
 
         /**

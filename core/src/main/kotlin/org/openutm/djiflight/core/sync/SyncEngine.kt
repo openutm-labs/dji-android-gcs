@@ -65,11 +65,15 @@ class SyncEngine(
         lastRecordedSeq: Long,
         record: suspend (FlightEvent) -> FlightSnapshot,
     ): SyncOutcome {
+        val destination = backend.snapshot()
+        if (journal.serverId != destination.serverId) return SyncOutcome(
+            SyncStatus.BLOCKED, message = "Flight belongs to another server or has no verified server association. Restore its original device setup to sync; the record is kept on this device.",
+        )
         val now = clock.nowMs()
         val b = backoff.getOrPut(snapshot.flightId) { Backoff() }
         if (now < b.nextAtMs) return SyncOutcome(SyncStatus.BACKOFF, retryAtMs = b.nextAtMs)
         val outcome = try {
-            step(snapshot, journal, lastRecordedSeq, record, now)
+            step(snapshot, journal, lastRecordedSeq, record, now, destination)
         } catch (e: IllegalArgumentException) {
             SyncOutcome(SyncStatus.BLOCKED, message = e.message)
         }
@@ -89,6 +93,7 @@ class SyncEngine(
         lastRecordedSeq: Long,
         record: suspend (FlightEvent) -> FlightSnapshot,
         now: Long,
+        backend: UtmBackend,
     ): SyncOutcome {
         var s = start
         val plan = s.plan ?: return SyncOutcome(SyncStatus.IDLE)

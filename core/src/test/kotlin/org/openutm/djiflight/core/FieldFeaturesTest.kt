@@ -191,6 +191,7 @@ class FieldFeaturesTest {
             "raw_geo_fence":{"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"type":"Polygon",
             "coordinates":[[[36.8,-1.3],[36.83,-1.3],[36.83,-1.28],[36.8,-1.28],[36.8,-1.3]]]}}]}}]}"""
         val zonesBackend = object : org.openutm.djiflight.core.sync.UtmBackend by backend {
+            override fun snapshot(): org.openutm.djiflight.core.sync.UtmBackend = this
             override suspend fun zones(area: org.openutm.djiflight.core.geo.BBox, startMs: Long, endMs: Long) = BackendResult.Ok(body)
         }
         val cache = File(tmp, "zones.json")

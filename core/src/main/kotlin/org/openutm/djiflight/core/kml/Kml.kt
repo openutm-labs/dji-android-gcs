@@ -44,6 +44,7 @@ object Kml {
             val pm = placemarks.item(i) as Element
             val name = pm.child("name")?.textContent?.trim()?.takeIf { it.isNotEmpty() }
             val polygon = pm.firstDescendant("Polygon")?.let { poly ->
+                require(poly.firstDescendant("innerBoundaryIs") == null) { "KML exclusion holes are not supported; split this into separate safe areas" }
                 (poly.firstDescendant("outerBoundaryIs") ?: poly).firstDescendant("coordinates")?.let { coords(it.textContent) }
             }
             val line = pm.firstDescendant("LineString")?.firstDescendant("coordinates")?.let { coords(it.textContent) }
