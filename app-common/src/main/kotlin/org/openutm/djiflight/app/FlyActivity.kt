@@ -139,12 +139,7 @@ class FlyActivity : Activity() {
         findViewById<View>(R.id.stage).addOnLayoutChangeListener { stage, l, t, r, b, oldL, oldT, oldR, oldB ->
             if (r - l != oldR - oldL || b - t != oldB - oldT) stage.post { layoutHud() }
         }
-        video.onPanelVisibilityChanged { open ->
-            warnings.show(!open)
-            inset.show(video.available && !open)
-            hudBottom.show(!open)
-            recenter.show(!open && mapIsPrimary && userMovedMap)
-        }
+        video.onPanelVisibilityChanged(::layoutVideoPanel)
 
         askPermissions()
         graph.start(this)
@@ -267,6 +262,18 @@ class FlyActivity : Activity() {
         if (::hudBottom.isInitialized) layoutHud()
     }
 
+    /** A settings/checklist panel needs the full camera area, even when opened from the top bar. */
+    private fun layoutVideoPanel(open: Boolean) {
+        if (open && mapIsPrimary && video.available) {
+            mapIsPrimary = false
+            placeViews()
+        }
+        warnings.show(!open)
+        inset.show(video.available && !open)
+        hudBottom.show(!open)
+        recenter.show(!open && mapIsPrimary && userMovedMap)
+    }
+
     /** The telemetry strip sits to the right of the inset, or at the left edge without one. */
     private fun layoutHud() {
         val stage = findViewById<View>(R.id.stage)
@@ -358,11 +365,7 @@ class FlyActivity : Activity() {
         showWarnings(adv)
         renderRail(f, m, p, adv)
         offerHandoff(f, p)
-        val panelOpen = video.panelOpen
-        warnings.show(!panelOpen)
-        inset.show(video.available && !panelOpen)
-        hudBottom.show(!panelOpen)
-        recenter.show(!panelOpen && mapIsPrimary && userMovedMap)
+        layoutVideoPanel(video.panelOpen)
     }
 
     /** Terrain model: how far the ground under the aircraft is below its home point; null without a terrain file. */

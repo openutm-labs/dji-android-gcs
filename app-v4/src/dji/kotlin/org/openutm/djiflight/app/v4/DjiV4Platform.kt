@@ -67,7 +67,9 @@ class UxCameraView : VideoPreview {
     private var root: View? = null
     private var compactNow = false
     private var panelListener: ((Boolean) -> Unit)? = null
-    override val panelOpen: Boolean get() = !compactNow && (root as? ViewGroup)?.let { r ->
+    // Status widgets outside the camera can open a panel while the camera is an inset.
+    // Report it in compact mode too so Fly can expand the camera before showing its controls.
+    override val panelOpen: Boolean get() = (root as? ViewGroup)?.let { r ->
         PANEL_WINDOWS.any { r.findViewById<View>(it)?.visibility == View.VISIBLE }
     } == true
 

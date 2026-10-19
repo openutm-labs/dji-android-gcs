@@ -23,8 +23,8 @@ android {
         // library is 16 KB-aligned. The DJI RC Pro Enterprise and RC Plus 2 run Android, arm64.
         minSdk = 24
         targetSdk = 34
-        versionCode = 7
-        versionName = "0.5.2"
+        versionCode = 8
+        versionName = "0.5.3"
         manifestPlaceholders["djiApiKey"] = djiApiKey
         buildConfigField("String", "DEV_BLENDER_URL", "\"$devBlenderUrl\"")
         ndk { abiFilters += listOf("arm64-v8a") }

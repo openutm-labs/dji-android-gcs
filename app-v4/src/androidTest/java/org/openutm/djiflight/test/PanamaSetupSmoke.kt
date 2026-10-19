@@ -70,13 +70,68 @@ class PanamaSetupSmoke : Instrumentation() {
             check(scanner.isFinishing || scanner.isDestroyed) { "QR cancellation did not close scanner" }
             waitFor("Scan QR code")
             removeMonitor(scannerMonitor)
-            result.putString("checks", "Panama default; empty personal identity; setup form opens; masked secret; missing pilot rejected before connection; actual QR tile launches JourneyApps outer and nested views; cancel returns to setup")
+            checkInsetPanel()
+            result.putString("checks", "Panama default; empty personal identity; setup form opens; masked secret; missing pilot rejected before connection; actual QR tile launches JourneyApps outer and nested views; cancel returns to setup; preflight opened from camera inset expands to full stage without replacing camera tree")
             result.putString("result", "PASS")
             finish(Activity.RESULT_OK, result)
         } catch (e: Throwable) {
+            uiAutomation.takeScreenshot()?.let { bitmap ->
+                java.io.File(targetContext.getExternalFilesDir(null), "panama-smoke-failure.png").outputStream().use {
+                    bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+                }
+                bitmap.recycle()
+            }
             result.putString("result", "FAIL")
             result.putString("error", e.javaClass.simpleName + ": " + e.message)
             finish(Activity.RESULT_CANCELED, result)
+        }
+    }
+
+    /** Read-only SDK checklist; never taps its calibration, travel-mode or flight controls. */
+    private fun checkInsetPanel() {
+        for (permission in listOf(android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.POST_NOTIFICATIONS)) {
+            uiAutomation.grantRuntimePermission(targetContext.packageName, permission)
+        }
+        val setupMonitor = addMonitor("org.openutm.djiflight.app.SetupActivity", null, false)
+        val flyMonitor = addMonitor("org.openutm.djiflight.app.FlyActivity", null, false)
+        runOnMainSync {
+            targetContext.startActivity(Intent().setClassName(targetContext.packageName, "org.openutm.djiflight.app.FlyActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
+        val fly = waitForMonitorWithTimeout(flyMonitor, 8_000) ?: error("Fly did not start")
+        removeMonitor(flyMonitor)
+        // A fresh device opens setup automatically; close only that setup activity to inspect Fly.
+        val setup = waitForMonitorWithTimeout(setupMonitor, 8_000) ?: error("fresh Fly did not open setup")
+        runOnMainSync { setup.finish() }
+        removeMonitor(setupMonitor)
+        waitForIdleSync()
+        fun id(name: String) = targetContext.resources.getIdentifier(name, "id", targetContext.packageName)
+        val stage = fly.findViewById<View>(id("stage"))
+        val primary = fly.findViewById<ViewGroup>(id("primary"))
+        val camera = primary.getChildAt(0)
+        val inset = fly.findViewById<ViewGroup>(id("inset"))
+        runOnMainSync { check(inset.getChildAt(inset.childCount - 1).performClick()) }
+        waitForIdleSync()
+        runOnMainSync {
+            check(primary.width < stage.width / 2 && camera.scaleX < 1f) { "camera was not in inset" }
+            // Reproduce an external SDK request without requiring SDK registration or an aircraft
+            // on the emulator. The real panel, global-layout listener and Fly activity handle it.
+            fly.findViewById<View>(id("pre_flight_check_list")).visibility = View.VISIBLE
+        }
+        val end = SystemClock.uptimeMillis() + 8_000
+        var expanded = false
+        var details = ""
+        while (SystemClock.uptimeMillis() < end && !expanded) {
+            runOnMainSync {
+                val panel = fly.findViewById<View>(id("pre_flight_check_list"))
+                expanded = panel.isShown && primary.width == stage.width && camera.scaleX == 1f && !inset.isShown
+                details = "panelShown=${panel.isShown}, visibility=${panel.visibility}, primary=${primary.width}, stage=${stage.width}, scale=${camera.scaleX}, insetShown=${inset.isShown}"
+            }
+            if (!expanded) SystemClock.sleep(100)
+        }
+        check(expanded) { "SDK checklist did not expand: $details" }
+        runOnMainSync {
+            check(primary.getChildAt(0) === camera) { "camera tree replaced during expansion" }
+            fly.finish()
         }
     }
 
