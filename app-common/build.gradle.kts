@@ -26,6 +26,10 @@ dependencies {
     api(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.core) // FileProvider for installing updates
     implementation(libs.maplibre.android)
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    implementation(libs.okhttp) // Explicit map-only identification and HTTP caching; no UTM credentials.
     implementation(libs.zxing.android.embedded) { isTransitive = false }
     implementation(libs.zxing.core)
 }

@@ -12,7 +12,7 @@ The reporting scope is Flight Blender network integration. Broadcast Remote ID i
 
 - Flight declarations, pre-flight checks, flight history and export, with telemetry recorded locally and uploaded when a network is available.
 - Grid, crosshatch, perimeter, five-direction, corridor and layered-surround survey planning; saved plans and JSON import/export. Execution depends on the aircraft and SDK support.
-- Offline basemaps, imagery and terrain from local PMTiles packs, with restriction-zone overlays and planning warnings.
+- OpenStreetMap street maps by default, plus offline basemaps, imagery and terrain from local PMTiles packs, with restriction-zone overlays and planning warnings.
 - DJI camera views and settings, flight status and aircraft controls through the appropriate SDK adapter.
 - Administrator-provided device setup, pilot rosters and optional Passport pilot sign-in.
 
@@ -28,7 +28,7 @@ Aircraft/controller compatibility and mission execution vary by model. Check the
 
 ## Get started
 
-For operators, start with the [APK installation and device setup guide (English / Español)](docs/17-panama-apk-distribution.md). Fresh DJI installs default to Panama; administrators supply each device's private setup and approve Passport access. Offline map packs are installed separately.
+For operators, start with the [APK installation and device setup guide (English / Español)](docs/17-panama-apk-distribution.md). Fresh DJI installs default to Panama; administrators supply each device's private setup and approve Passport access. Street maps load over the internet without a map account or key. Offline map packs are installed separately.
 
 For developers, follow [Build and test](#build-and-test) below. The simulator can be used without a DJI aircraft.
 
@@ -40,6 +40,7 @@ For developers, follow [Build and test](#build-and-test) below. The simulator ca
 - [Survey planning, Mini 2 qualification and feature gaps](docs/15-survey-expansion-and-mini2.md)
 - [Connect a phone to Panama](docs/16-connect-panama.md)
 - [Install, configure and distribute the APKs](docs/17-panama-apk-distribution.md)
+- [Default street maps and offline packs](docs/18-default-maps.md)
 - [Bench and field test plan](docs/14-dji-field-test-plan.md)
 - [Changelog](CHANGELOG.md)
 
@@ -99,7 +100,7 @@ Write the device's setup as JSON. Two optional fields help pilots coming from Dr
 
 `auth` is either `{"type": "client_credentials", "token_url": …, "client_id": …, "client_secret": …}`, using one Passport application per device, or `{"type": "dev"}`, which only debug builds accept.
 
-Map files (`basemap_url`, `terrain_url`, `imagery_url`) are PMTiles made with `tools/maps/region-pack.sh` and hosted next to the lab's other downloads; pilots can also import them from a card (Setup → Offline maps).
+Map files (`basemap_url`, `terrain_url`, `imagery_url`) are PMTiles made with `tools/maps/region-pack.sh` and hosted next to the lab's other downloads; pilots can also import them from a card (Device setup → Maps).
 
 `pilot_login` (optional) turns on pilot sign-in through the lab's identity server: `{"issuer": "https://passport.example.org", "client_id": "<public client>", "valid_hours": 72, "required": false}`. Register a public client (authorization code, RS256, PKCE) with the redirect URI `http://127.0.0.1/openutm-signin` (or set `redirect_uri`). Give roster pilots opaque ids, e.g. Passport's user id: a signed-in pilot is matched to the roster by id, then by email, and the roster id goes to Blender. Fields:
 

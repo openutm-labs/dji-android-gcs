@@ -265,6 +265,13 @@ class SetupActivity : Activity() {
     private fun maps() {
         val p = graph.provisioning.value
         heading(getString(R.string.setup_section_maps))
+        body(getString(R.string.maps_online_note))
+        row(getString(R.string.maps_online_provider), graph.provisioning.value?.onlineMap?.name ?: "OpenStreetMap")
+        heading(getString(R.string.maps_mode_title))
+        for ((mode, label) in listOf(RegionPacks.Mode.AUTOMATIC to R.string.maps_mode_automatic, RegionPacks.Mode.ONLINE to R.string.maps_mode_online, RegionPacks.Mode.OFFLINE to R.string.maps_mode_offline)) {
+            button(getString(label), R.drawable.ic_map, if (graph.maps.mode == mode) Kind.PRIMARY else Kind.SECONDARY) { graph.maps.mode = mode; render() }
+        }
+        body(getString(R.string.maps_coverage_note), R.color.text3)
         body(getString(R.string.maps_body))
         body(progress ?: graph.maps.describe(), R.color.text)
         val listed = p != null && (p.basemapUrl != null || p.imageryUrl != null || p.terrainUrl != null)

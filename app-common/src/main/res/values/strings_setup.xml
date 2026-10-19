@@ -4,7 +4,7 @@
     <!-- Setup: screen and sections -->
     <string name="setup_title">Device setup</string>
     <string name="setup_section_device">This device</string>
-    <string name="setup_section_maps">Offline maps</string>
+    <string name="setup_section_maps">Maps</string>
     <string name="setup_section_zones">Restriction zones</string>
     <string name="setup_section_updates">App updates</string>
 
@@ -71,7 +71,7 @@
     <string name="setup_panama_failed">Could not connect: %1$s</string>
 
     <!-- Setup: offline maps -->
-    <string name="maps_body">The map works with no network: it reads map files stored on this controller, never online tiles.</string>
+    <string name="maps_body">Offline packs work without a network. Import regional map files from your coordinator, or download the files listed in your device setup.</string>
     <string name="maps_no_files_listed">This device\'s setup lists no map files: import them from a card.</string>
     <string name="maps_download">Download the lab\'s map files</string>
     <string name="maps_import_basemap">Import a basemap (.pmtiles)</string>

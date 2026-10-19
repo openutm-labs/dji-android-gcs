@@ -180,7 +180,7 @@ class PlanActivity : Activity() {
             return
         }
         buildTopBar()
-        map = MapController(this, { graph.maps.basemap }, { graph.maps.imagery }, { graph.maps.terrain })
+        map = MapController(this, graph.maps) { graph.provisioning.value?.onlineMap }
         map.attachTo(findViewById(R.id.mapBox), savedInstanceState)
         map.onMapClick { tapped ->
             if (mission) {
@@ -243,7 +243,7 @@ class PlanActivity : Activity() {
         mapHint = findViewById(R.id.mapHint)
         mapHint.background = rounded(color(R.color.scrim), dp(8).toFloat())
         mapHint.setOnClickListener {
-            if (!graph.maps.basemap.isFile && !graph.maps.imagery.isFile) {
+            if (!graph.maps.usesOnline() && !graph.maps.basemap.isFile && !graph.maps.imagery.isFile) {
                 startActivity(Intent(this, SetupActivity::class.java).putExtra("section", "maps"))
             }
         }
@@ -717,7 +717,7 @@ class PlanActivity : Activity() {
         map.setPilot(graph.deviceFix.value?.let { LatLng(it.lat, it.lng) })
         if (!fitted && map.ready) (area ?: (survey.takeIf { it.size >= 2 }) ?: center?.let { listOf(it) })?.let { map.fit(it, dp(40), dp(64), dp(40), dp(80)); fitted = true }
 
-        val mapMissing = !graph.maps.basemap.isFile && !graph.maps.imagery.isFile
+        val mapMissing = !graph.maps.usesOnline() && !graph.maps.basemap.isFile && !graph.maps.imagery.isFile
         mapHint.isClickable = mapMissing
         mapHint.setIfChanged(
             when {

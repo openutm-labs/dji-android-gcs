@@ -2,6 +2,19 @@
 
 Changes to preview APK builds, newest first. Current setup instructions and qualification limits are in the [distribution guide](docs/17-panama-apk-distribution.md).
 
+## 0.6.0 — 2026-10-20
+
+### Added
+
+- OpenStreetMap street maps in Fly and Plan when no local basemap or imagery pack is installed; no map account or API key required.
+- Automatic, online and offline-only map modes in Device setup → Maps, with visible map attribution and loading/network failure messages.
+- Optional public `online_map` provider configuration in device setup, independent of Flight Blender credentials.
+- An identifiable map HTTP client, cache-header support and disabled tile prefetching. Offline PMTiles downloads remain separate from public OSM tiles.
+
+### Fixed
+
+- Fresh installs no longer show an unexplained empty background when no offline pack has been supplied.
+
 ## 0.5.3 — 2026-10-19
 
 ### Fixed

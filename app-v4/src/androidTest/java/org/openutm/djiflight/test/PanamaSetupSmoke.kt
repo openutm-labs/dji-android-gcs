@@ -17,7 +17,12 @@ class PanamaSetupSmoke : Instrumentation() {
     override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); start() }
 
     override fun onStart() {
+        val mapPreferences = targetContext.getSharedPreferences("map-display", android.content.Context.MODE_PRIVATE)
+        val originalMode = mapPreferences.getString("mode", null)
+        // Automated UI checks must never request tiles from the public OSM service.
+        mapPreferences.edit().putString("mode", "OFFLINE").commit()
         val result = Bundle()
+        var resultCode = Activity.RESULT_CANCELED
         try {
             val activity = startActivitySync(Intent().setClassName(targetContext.packageName, "org.openutm.djiflight.app.SetupActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             waitForIdleSync()
@@ -73,7 +78,7 @@ class PanamaSetupSmoke : Instrumentation() {
             checkInsetPanel()
             result.putString("checks", "Panama default; empty personal identity; setup form opens; masked secret; missing pilot rejected before connection; actual QR tile launches JourneyApps outer and nested views; cancel returns to setup; preflight opened from camera inset expands to full stage without replacing camera tree")
             result.putString("result", "PASS")
-            finish(Activity.RESULT_OK, result)
+            resultCode = Activity.RESULT_OK
         } catch (e: Throwable) {
             uiAutomation.takeScreenshot()?.let { bitmap ->
                 java.io.File(targetContext.getExternalFilesDir(null), "panama-smoke-failure.png").outputStream().use {
@@ -83,8 +88,10 @@ class PanamaSetupSmoke : Instrumentation() {
             }
             result.putString("result", "FAIL")
             result.putString("error", e.javaClass.simpleName + ": " + e.message)
-            finish(Activity.RESULT_CANCELED, result)
+        } finally {
+            mapPreferences.edit().apply { if (originalMode == null) remove("mode") else putString("mode", originalMode) }.commit()
         }
+        finish(resultCode, result)
     }
 
     /** Read-only SDK checklist; never taps its calibration, travel-mode or flight controls. */

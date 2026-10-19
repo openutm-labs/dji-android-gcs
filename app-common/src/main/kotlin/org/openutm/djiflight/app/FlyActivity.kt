@@ -125,7 +125,7 @@ class FlyActivity : Activity() {
 
         video = graph.platform.video(this)
         cameraView = video.createView(this) ?: View(this).apply { setBackgroundColor(Color.BLACK) }
-        map = MapController(this, { graph.maps.basemap }, { graph.maps.imagery }, { graph.maps.terrain })
+        map = MapController(this, graph.maps, bottomClearanceDp = 110) { graph.provisioning.value?.onlineMap }
         mapIsPrimary = !video.available || savedInstanceState?.getBoolean("mapPrimary") == true
         placeViews()
         map.attachTo(if (mapIsPrimary) mapPrimary else inset, savedInstanceState)

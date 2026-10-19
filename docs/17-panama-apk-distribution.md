@@ -1,13 +1,13 @@
-# Panama APK distribution — 0.5.3
+# Panama APK distribution — 0.6.0
 
 These signed preview installers select Panama on first launch. They contain the public Flight Blender and Passport addresses, with no operator account, pilot identity, aircraft serial, OAuth client secret or access token bundled into the app.
 
 ## Choose the installer
 
-- **OpenUTM-Panama-v4-0.5.3.apk:** the DJI v4 app, including the Mini 2. Android 6 or later; ARM 32/64-bit.
-- **OpenUTM-Panama-v5-0.5.3.apk:** the DJI v5 app for compatible enterprise equipment. Android 7 or later; ARM64. The coordinator must confirm the aircraft/controller combination before use.
+- **OpenUTM-Panama-v4-0.6.0.apk:** the DJI v4 app, including the Mini 2. Android 6 or later; ARM 32/64-bit.
+- **OpenUTM-Panama-v5-0.6.0.apk:** the DJI v5 app for compatible enterprise equipment. Android 7 or later; ARM64. The coordinator must confirm the aircraft/controller combination before use.
 
-Use 0.5.3 for distribution. It includes the 0.5.2 fix for the **Scan QR code** crash and expands DJI checklist/settings panels opened while the camera is in the small inset. Install it over the release-signed 0.5.1 or 0.5.2 APK to retain device data.
+Use 0.6.0 for distribution. It adds default OpenStreetMap street maps and retains the QR and camera-panel fixes. Install it over a release-signed 0.5.x APK to retain device data.
 
 These are two separate apps. Install the one for the operator's equipment. They are not installers for every DJI controller. Do not include the simulator or the Android test APK in an operator download.
 
@@ -19,7 +19,7 @@ These are two separate apps. Install the one for the operator's equipment. They 
 4. Prefer **Scan QR code** or **Import file** using the private device setup your coordinator provided. This can include the roster, aircraft, map downloads and updates.
 5. If the coordinator supplied device credentials instead, select **Enter Panama device setup**. Enter the device name, operator ID, pilot name, client ID, client secret and applicable height limit. Aircraft details can be entered now or selected after connection. Leave registration blank if no number has been supplied; do not invent one.
 6. Select **Connect to Panama**. The app checks token retrieval and a protected server read before saving the setup. A failed check leaves the form open. It does not create a declaration.
-7. Install the offline map packs covering the planned location in **Device setup → Offline maps**. Connecting to Panama does not download maps automatically. A grey map means the required local pack is missing; Plan now offers a link to import one.
+7. With internet access, street maps load automatically in Fly and Plan. In **Device setup → Maps**, keep **Automatic** or select **Online street maps**. Before operating without internet, import approved offline packs for your area and select **Offline packs only**. Online streets do not include satellite imagery or terrain heights. See the [map guide](18-default-maps.md).
 8. Connect the controller and grounded aircraft. In **Plan**, review the pilot, aircraft, location, height and time. **Save and declare** creates a new declaration on Panama. Check its acknowledgement before operations.
 
 Contact the coordinator to request access. A website login alone does not supply the device's credentials. Do not distribute an operator's setup file, QR code or client secret alongside a shared APK. Store completed setup files privately and remove the transfer copy after importing.
@@ -41,7 +41,7 @@ For the initial rollout, the coordinator should prepare each device's private se
 
 Mini 2 automatic missions remain disabled in release builds. Bench checks and successful server declarations do not qualify a real flight or grant permission to fly. Offline map/terrain packs, lab-specific approvals and field validation still need to be supplied for the operation. Broadcast Remote ID is outside this release's network-reporting scope.
 
-The APKs are signed with the locally held OpenUTM release certificate. An installed development APK uses a different signing certificate and cannot be overwritten by this release. Do not uninstall a development build with unsynced records just to change certificates; preserve/export its records and coordinate the migration first. The existing development app on the owner's phone was left in place.
+The APKs are signed with the locally held OpenUTM release certificate. An installed development APK uses a different signing certificate and cannot be overwritten by this release. Do not uninstall a development build with unsynced records just to change certificates; preserve/export its records and coordinate the migration first.
 
 ## Español: instalación inicial
 
@@ -51,7 +51,7 @@ The APKs are signed with the locally held OpenUTM release certificate. An instal
 4. Use **Scan QR code** o **Import file** con la configuración privada que le entregue su coordinador.
 5. Si recibió credenciales del dispositivo, elija **Enter Panama device setup**. Ingrese el nombre del dispositivo, identificador del operador, nombre del piloto, identificador y secreto del cliente, y el límite de altura correspondiente. Agregue los datos de la aeronave si dispone de ellos.
 6. Pulse **Connect to Panama**. La aplicación comprueba el acceso antes de guardar. Este paso no crea una declaración de vuelo.
-7. Importe los mapas sin conexión de su zona en **Device setup → Offline maps**. La conexión al servidor no descarga los mapas automáticamente.
+7. Con internet, los mapas de calles se cargan automáticamente. En **Device setup → Maps**, mantenga **Automatic** o elija **Online street maps**. Para trabajar sin internet, importe los paquetes de su zona y seleccione **Offline packs only**. Los mapas de calles no incluyen imágenes satelitales ni alturas del terreno.
 8. Conecte el controlador y la aeronave en tierra. En **Plan**, revise el piloto, la aeronave, la zona, la altura y el horario. Pulse **Save and declare** y compruebe la respuesta del servidor.
 
 Solicite el acceso a su coordinador. No comparta archivos de configuración, códigos QR ni secretos del cliente junto con un APK de distribución general. Las misiones automáticas del Mini 2 siguen deshabilitadas en esta versión. Una declaración aceptada no autoriza por sí sola un vuelo.
@@ -91,3 +91,8 @@ For 0.5.3/code 8, both signed releases and shared debug/v4 release/v5 release li
 On the physical OnePlus, 0.5.3 was installed in place. **Scan QR code** opened with a live phone-camera preview and cancelled back to setup. With the camera in the map inset, tapping DJI's actual top status indicator opened the checklist at full size (1,200 physical pixels wide); closing it and switching back left a clean preview with no miniature controls. No new app crash was recorded during these checks. The phone's original 30-second timeout and USB stay-awake setting remained unchanged. No aircraft flight, calibration, capture or settings commands were issued; no declaration or telemetry was submitted during these UI checks.
 
 The v5 build retains vendor warnings about optional Java KML helpers referencing `org.dom4j`; these helpers are not directly called by this app. Build success and emulator startup do not qualify all vendor SDK paths or equipment combinations.
+
+
+For **0.6.0/code 9**, 156 tests passed: 139 core, 12 replay/Blender integration and 5 map-source/HTTP-cache tests. Both signed aircraft releases and the simulator debug build completed; shared debug, v4 release and v5 release lint completed without errors. Map HTTP tests use loopback fixtures and do not contact the public tile service. Both release certificates, version/minimum-Android metadata and packaged content were verified; private credentials and personal setup are excluded.
+
+On the physical OnePlus, the v4 release updated 0.5.3 in place. The normal visible map loaded OSM roads and labels, with the phone's position overlay and readable attribution in the inset and expanded map. Selecting Offline packs only with no files showed the missing-map message; tapping it opened Maps setup. Restoring Automatic restored streets, position and credits. No crash entry was recorded for the current app process. The original screen timeout and USB stay-awake settings remained unchanged. The phone is still unprovisioned for Flight Blender; no interactive Plan declaration workflow or v5 aircraft was qualified in these map checks. No aircraft-control commands or production declaration/telemetry writes were issued.

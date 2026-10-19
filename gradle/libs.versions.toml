@@ -17,6 +17,7 @@ appcompat = "1.7.0"
 constraintlayout = "2.1.4"
 # 11.13.x: PMTiles from local files (>= 11.7), minSdk 21, kotlin-stdlib 2.0 (13.x needs 2.2).
 maplibre = "11.13.5"
+okhttp = "4.12.0"
 zxing-embedded = "4.3.0"
 # zxing-android-embedded needs core 3.3.x below API 24 (its README).
 zxing-core = "3.3.3"
@@ -57,6 +58,7 @@ androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayo
 androidx-core = { module = "androidx.core:core", version.ref = "androidx-core" }
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
 maplibre-android = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 zxing-android-embedded = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxing-embedded" }
 androidx-cardview = { module = "androidx.cardview:cardview", version.ref = "cardview" }
 androidx-legacy-support = { module = "androidx.legacy:legacy-support-v4", version.ref = "legacy-support" }
