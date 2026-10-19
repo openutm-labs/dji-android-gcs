@@ -119,18 +119,34 @@ class Stepper(
     }
 
     companion object {
-        /** A labelled stepper row: label and hint on the left, the stepper on the right. */
-        fun row(activity: Activity, label: String, hint: String?, stepper: Stepper, stepperWidthDp: Int = 168): LinearLayout = LinearLayout(activity).apply {
-            orientation = HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, activity.dp(6), 0, activity.dp(6))
+        /** Labels sit above the control when a narrow panel or larger font needs more room. */
+        fun row(activity: Activity, label: String, hint: String?, stepper: Stepper, stepperWidthDp: Int = 168): LinearLayout {
             val left = LinearLayout(activity).apply {
                 orientation = VERTICAL
                 addView(activity.text(15f, bold = true).apply { text = label })
                 if (hint != null) addView(activity.text(13f, R.color.text3).apply { text = hint; tag = "hint" })
             }
-            addView(left, LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            addView(stepper, LayoutParams(activity.dp(stepperWidthDp), ViewGroup.LayoutParams.WRAP_CONTENT))
+            return object : LinearLayout(activity) {
+                override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+                    val available = MeasureSpec.getSize(widthMeasureSpec) - paddingLeft - paddingRight
+                    val stack = available - activity.dp(stepperWidthDp) < activity.dp(100f * resources.configuration.fontScale)
+                    orientation = if (stack) VERTICAL else HORIZONTAL
+                    (left.layoutParams as LayoutParams).apply {
+                        width = if (stack) LayoutParams.MATCH_PARENT else 0
+                        weight = if (stack) 0f else 1f
+                    }
+                    (stepper.layoutParams as LayoutParams).apply {
+                        width = if (stack) LayoutParams.MATCH_PARENT else activity.dp(stepperWidthDp)
+                        topMargin = if (stack) activity.dp(6) else 0
+                    }
+                    super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+                }
+            }.apply {
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, activity.dp(6), 0, activity.dp(6))
+                addView(left, LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                addView(stepper, LayoutParams(activity.dp(stepperWidthDp), ViewGroup.LayoutParams.WRAP_CONTENT))
+            }
         }
     }
 }

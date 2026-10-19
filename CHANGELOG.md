@@ -2,6 +2,41 @@
 
 Changes to preview APK builds, newest first. Current setup instructions and qualification limits are in the [distribution guide](docs/17-panama-apk-distribution.md).
 
+## 0.6.2 — 2026-10-20
+
+### Fixed
+
+- Map labels update layout only when their measured constraints change, avoiding repeated layout passes and idle-test stalls.
+- Mapping setup presents mission type before altitude and marks an unconfirmed camera profile.
+- Plan's Undo/Clear row stays within the map, with Recenter above it. Missing-map guidance appears once; map-source status sits below wrapped planning instructions.
+- Setup navigation scrolls on short screens, accommodates larger fonts and gives map-source choices priority. Status labels and values both wrap within their columns.
+- Plan estimates scroll with the form, and narrow stepper rows stack their labels above the controls while the declaration action and validation message remain visible.
+- Survey-pattern selection uses the same readable dropdown style as pilot and aircraft selection.
+- Empty flight history uses the full screen, offers a setup/planning action and disables empty cleanup.
+- DJI v5 hides camera controls until their camera is available, clears them on disconnect and handles availability/source callbacks in either order. Unknown storage capacity displays N/A rather than a negative number; capacity is read from the selected storage medium.
+- DJI v5 settings uses a packaged Close icon, with an accessibility label, instead of a potentially blank font icon. The UTM pill has spacing before the aircraft indicators.
+
+## 0.6.1 — 2026-10-20
+
+### Fixed
+
+- DJI v4 aircraft status uses the panel's full width instead of a narrow, text-shrinking list. Rows have a minimum 48 dp height, scroll within the available screen and include an explicit Close button.
+- The top-bar status entry opens its panel directly, avoiding dependence on the SDK popup event subscription after restart.
+- The status panel grows up to 640 dp (with additional width for larger system fonts), bounded by the camera stage. DJI's status data, excluded rows and aircraft actions remain bound to the original SDK views.
+
+## 0.6.0 — 2026-10-20
+
+### Added
+
+- OpenStreetMap street maps in Fly and Plan when no local basemap or imagery pack is installed; no map account or API key required.
+- Automatic, online and offline-only map modes in Device setup → Maps, with visible map attribution and loading/network failure messages.
+- Optional public `online_map` provider configuration in device setup, independent of Flight Blender credentials.
+- An identifiable map HTTP client, cache-header support and disabled tile prefetching. Offline PMTiles downloads remain separate from public OSM tiles.
+
+### Fixed
+
+- Fresh installs no longer show an unexplained empty background when no offline pack has been supplied.
+
 ## 0.5.3 — 2026-10-19
 
 ### Fixed

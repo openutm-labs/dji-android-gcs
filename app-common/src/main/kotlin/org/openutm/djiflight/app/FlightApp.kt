@@ -177,6 +177,7 @@ class AppGraph(private val app: Application, val platform: Platform) {
         // A sign-in from another identity server (or none configured now) no longer says who flies.
         pilots.current.value?.let { s -> if (s.issuer.trimEnd('/') != p.pilotLogin?.issuer?.trimEnd('/')) pilots.signOut() }
         _provisioning.value = p
+        maps.configurationChanged()
     }
 
     fun flightInProgress(f: FlightSnapshot) = f.plan != null && f.phase in setOf(Phase.PLANNED, Phase.DECLARED, Phase.ACTIVE, Phase.LANDED)

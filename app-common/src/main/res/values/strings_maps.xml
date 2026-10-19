@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="mapCredits" type="id" />
+    <item name="mapStatus" type="id" />
+    <string name="map_loading">Loading street map…</string>
+    <string name="map_online_streets">Online street map</string>
+    <string name="map_online_unavailable">No internet for street maps. Use offline packs.</string>
+    <string name="map_tiles_unavailable">Some map tiles unavailable. Tap to retry.</string>
+    <string name="map_offline_missing">No offline map. Tap to set up maps.</string>
+    <string name="map_offline_ready">Offline map</string>
+    <string name="maps_mode_title">Map source</string>
+    <string name="maps_mode_automatic">Automatic: prefer offline packs</string>
+    <string name="maps_mode_online">Online street maps</string>
+    <string name="maps_mode_offline">Offline packs only</string>
+    <string name="maps_online_provider">Street map provider</string>
+    <string name="maps_online_note">Street maps load over the internet without a map account. Viewing sends the visible map area to the tile provider. Online tiles are cached for normal viewing; use a lab map pack for reliable offline coverage. No satellite imagery or terrain is downloaded automatically.</string>
+    <string name="maps_coverage_note">Automatic mode uses installed basemap or imagery packs. Outside their coverage, select Online street maps or import the correct regional pack.</string>
+</resources>

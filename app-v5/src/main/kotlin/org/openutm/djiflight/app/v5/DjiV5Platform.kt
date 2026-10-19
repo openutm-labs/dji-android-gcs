@@ -201,7 +201,12 @@ class UxCameraView : VideoPreview {
 
     private val availableCameras = object : ICameraStreamManager.AvailableCameraUpdatedListener {
         override fun onAvailableCameraUpdated(list: MutableList<ComponentIndexType>) {
-            main.post { cameras = list.toList(); pickSource() }
+            main.post {
+                cameras = list.toList()
+                pickSource()
+                // Camera availability and source callbacks can arrive in either order.
+                lastSource?.let { (device, lens) -> onSourceUpdated(device, lens, force = true) }
+            }
         }
 
         override fun onCameraStreamEnableUpdate(enabled: MutableMap<ComponentIndexType, Boolean>) = Unit
@@ -240,7 +245,8 @@ class UxCameraView : VideoPreview {
             val shown = if (child.id == R.id.widget_focal_zoom || child.id == R.id.panel_ndvi_camera) View.INVISIBLE else View.VISIBLE
             child.visibility = if (compact) View.GONE else shown
         }
-        lastSource?.let { (d, l) -> applyVisibility(d, l) }
+        val source = lastSource
+        applyVisibility(source?.first ?: ComponentIndexType.UNKNOWN, source?.second ?: CameraLensType.UNKNOWN)
     }
 
     override fun onResume() {
@@ -258,7 +264,14 @@ class UxCameraView : VideoPreview {
     /** DJI's sample order: the main (left) camera, then the other gimbal ports, then the FPV camera. */
     private fun pickSource() {
         val f = fpv ?: return
-        if (cameras.isEmpty()) return
+        if (cameras.isEmpty()) {
+            lastSource = null
+            root?.findViewById<FPVInteractionWidget>(R.id.widget_fpv_interaction)?.isInteractionEnabled = false
+            f.isCameraSourceNameVisible = false
+            f.isCameraSourceSideVisible = false
+            applyVisibility(ComponentIndexType.UNKNOWN, CameraLensType.UNKNOWN)
+            return
+        }
         val preferred = listOf(
             ComponentIndexType.LEFT_OR_MAIN, ComponentIndexType.RIGHT, ComponentIndexType.UP, ComponentIndexType.PORT_1,
             ComponentIndexType.PORT_2, ComponentIndexType.PORT_3, ComponentIndexType.PORT_4, ComponentIndexType.VISION_ASSIST,
@@ -266,17 +279,20 @@ class UxCameraView : VideoPreview {
         f.updateVideoSource(preferred)
     }
 
-    private fun onSourceUpdated(device: ComponentIndexType, lens: CameraLensType) {
+    private fun onSourceUpdated(device: ComponentIndexType, lens: CameraLensType, force: Boolean = false) {
         val r = root ?: return
-        if (lastSource == device to lens) return
+        if (!force && lastSource == device to lens) return
         lastSource = device to lens
         applyVisibility(device, lens)
-        fpv?.let { it.isCameraSourceNameVisible = device != ComponentIndexType.UNKNOWN; it.isCameraSourceSideVisible = device != ComponentIndexType.UNKNOWN }
-        val fpvCamera = CameraUtil.isFPVTypeView(device)
+        val available = device != ComponentIndexType.UNKNOWN && device in cameras
+        fpv?.let { it.isCameraSourceNameVisible = available; it.isCameraSourceSideVisible = available }
+        val fpvCamera = device == ComponentIndexType.UNKNOWN || device !in cameras || CameraUtil.isFPVTypeView(device)
         r.findViewById<FPVInteractionWidget>(R.id.widget_fpv_interaction)?.let {
             it.isInteractionEnabled = !fpvCamera && device != ComponentIndexType.UNKNOWN
             if (!fpvCamera) it.updateCameraSource(device, lens)
         }
+        // A late callback after disconnect must not restore stale controls or camera bindings.
+        if (!available) return
         for (i in 0 until r.childCount) {
             when (val v = r.getChildAt(i)) {
                 is LensControlWidget -> v.updateCameraSource(device, lens)
@@ -295,7 +311,7 @@ class UxCameraView : VideoPreview {
     private fun applyVisibility(device: ComponentIndexType, lens: CameraLensType) {
         val r = root ?: return
         if (compactNow) return
-        val fpvCamera = CameraUtil.isFPVTypeView(device)
+        val fpvCamera = device == ComponentIndexType.UNKNOWN || device !in cameras || CameraUtil.isFPVTypeView(device)
         val cameraIds = setOf(
             R.id.widget_lens_control, R.id.panel_visual_camera, R.id.widget_auto_exposure_lock, R.id.widget_focus_mode,
             R.id.widget_focus_exposure_switch, R.id.widget_camera_controls, R.id.widget_focal_zoom,

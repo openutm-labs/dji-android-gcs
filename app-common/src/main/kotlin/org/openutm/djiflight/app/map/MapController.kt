@@ -2,6 +2,12 @@ package org.openutm.djiflight.app.map
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -12,6 +18,11 @@ import android.graphics.Typeface
 import android.os.Bundle
 import android.view.MotionEvent
 import android.view.ViewGroup
+import android.view.Gravity
+import android.widget.FrameLayout
+import android.widget.TextView
+import org.maplibre.android.tile.TileOperation
+import org.maplibre.android.camera.CameraPosition
 import org.json.JSONArray
 import org.json.JSONObject
 import org.maplibre.android.MapLibre
@@ -44,6 +55,8 @@ import org.maplibre.android.style.layers.PropertyFactory.lineWidth
 import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.openutm.djiflight.app.R
+import org.openutm.djiflight.app.RegionPacks
+import org.openutm.djiflight.core.provisioning.OnlineBasemap
 import org.openutm.djiflight.core.geo.LatLng
 import org.openutm.djiflight.core.zones.Zone
 import java.io.File
@@ -57,15 +70,87 @@ import org.maplibre.android.geometry.LatLng as MlLatLng
  * On the Plan screen it also edits a polygon ([edit]): drag a corner to move it, drag an edge's
  * "+" handle to add a corner there; a tap elsewhere goes to [onMapClick].
  */
-class MapController(context: Context, private val basemap: () -> File?, private val imagery: () -> File?, private val terrain: () -> File? = { null }) {
+class MapController(
+    private val context: Context,
+    private val packs: RegionPacks,
+    private val bottomClearanceDp: Int = 68,
+    private val provider: () -> OnlineBasemap? = { null },
+) {
     init {
         MapLibre.getInstance(context.applicationContext)
+        MapNetwork.install(context.applicationContext)
     }
 
     private val density = context.resources.displayMetrics.density
     /** The letter on the home point marker (the Fly screen's map key names it). */
     private val homeLetter = context.getString(R.string.map_home_letter)
-    val view = MapView(context, MapLibreMapOptions.createFromAttributes(context).textureMode(true).attributionEnabled(false).logoEnabled(false).compassEnabled(true))
+    private val mapView = MapView(context, MapLibreMapOptions.createFromAttributes(context).textureMode(true).attributionEnabled(false).logoEnabled(false).compassEnabled(true))
+    private fun dp(value: Int) = (value * density).toInt()
+    val view = FrameLayout(context)
+    private val credits = TextView(context).apply {
+        id = R.id.mapCredits
+        textSize = 10f; setTextColor(Color.BLACK); setBackgroundColor(0xE6FFFFFF.toInt())
+        setPadding(dp(4), dp(2), dp(4), dp(2))
+        setOnClickListener {
+            val link = if (packs.usesOnline()) (provider() ?: OnlineBasemap()).attributionUrl else "https://www.openstreetmap.org/copyright"
+            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link))) }
+        }
+    }
+    private val status = TextView(context).apply {
+        id = R.id.mapStatus
+        textSize = 11f; setTextColor(Color.BLACK); setBackgroundColor(0xE6FFFFFF.toInt())
+        setPadding(dp(5), dp(3), dp(5), dp(3))
+        setOnClickListener {
+            if (!packs.usesOnline() && !packs.basemap.isFile && !packs.imagery.isFile) {
+                context.startActivity(Intent(context, org.openutm.djiflight.app.SetupActivity::class.java).putExtra("section", "maps"))
+            } else reloadStyle()
+        }
+    }
+    /** A host's instruction banner can wrap; reserve its measured height instead of guessing. */
+    var statusTopClearancePx: Int? = null
+        set(value) {
+            if (field == value) return
+            field = value
+            val p = status.layoutParams as? FrameLayout.LayoutParams ?: return
+            val top = value ?: dp(58)
+            if (p.topMargin != top) status.layoutParams = p.apply { topMargin = top }
+        }
+    private var loaded = false
+    private var tileError = false
+    private val connectivity = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    private var observingNetwork = false
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) { view.post { updateStatus() } }
+        override fun onLost(network: Network) { view.post { updateStatus() } }
+        override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) { view.post { updateStatus() } }
+    }
+    init {
+        view.addView(mapView, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        view.addView(credits, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM or Gravity.END))
+        view.addView(status, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.START))
+        view.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            val labelWidth = (view.width - dp(8)).coerceAtLeast(1)
+            // TextView setters request another layout even when their value is unchanged.
+            if (credits.maxWidth != labelWidth) credits.maxWidth = labelWidth
+            if (status.maxWidth != labelWidth) status.maxWidth = labelWidth
+            val small = view.height < dp(180)
+            val bottom = dp(if (small) 4 else bottomClearanceDp)
+            val top = statusTopClearancePx ?: dp(if (small) 4 else 58)
+            (credits.layoutParams as FrameLayout.LayoutParams).let { p ->
+                if (p.bottomMargin != bottom) credits.layoutParams = p.apply { bottomMargin = bottom; marginEnd = dp(4) }
+            }
+            (status.layoutParams as FrameLayout.LayoutParams).let { p ->
+                if (p.topMargin != top || p.marginStart != dp(4)) status.layoutParams = p.apply { topMargin = top; marginStart = dp(4) }
+            }
+        }
+        mapView.addOnTileActionListener { operation, _, _, _, _, _, source ->
+            if (operation == TileOperation.Error && source == "online-streets") view.post { tileError = true; updateStatus() }
+        }
+        mapView.addOnDidFinishRenderingFrameListener(MapView.OnDidFinishRenderingFrameListener { fully, _, _ ->
+            if (fully && !loaded) view.post { loaded = true; updateStatus() }
+        })
+        mapView.addOnDidFailLoadingMapListener { view.post { tileError = true; updateStatus() } }
+    }
     private var map: MapLibreMap? = null
     private var style: Style? = null
     private var pendingCenter: Pair<LatLng, Double>? = null
@@ -80,9 +165,13 @@ class MapController(context: Context, private val basemap: () -> File?, private 
         (view.parent as? ViewGroup)?.removeView(view)
         parent.addView(view, 0, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         if (map == null) {
-            view.onCreate(savedState)
-            view.getMapAsync { m ->
+            mapView.onCreate(savedState)
+            mapView.getMapAsync { m ->
                 map = m
+                // Public OSM service: viewport requests only, no lower-zoom or offline prefetch.
+                m.setPrefetchesTiles(false)
+                m.setPrefetchZoomDelta(0)
+                if (savedState == null) m.moveCamera(CameraUpdateFactory.newCameraPosition(CameraPosition.Builder().target(MlLatLng(0.0, 0.0)).zoom(1.5).build()))
                 m.uiSettings.isRotateGesturesEnabled = false
                 m.uiSettings.isTiltGesturesEnabled = false
                 // Drawing corners: quick taps in a row must add corners, not zoom (pinch still zooms).
@@ -104,13 +193,32 @@ class MapController(context: Context, private val basemap: () -> File?, private 
     fun reloadStyle() {
         val m = map ?: return
         style = null
-        m.setStyle(Style.Builder().fromJson(MapStyle.json(basemap(), imagery(), terrain()))) { st ->
+        loaded = false
+        tileError = false
+        credits.text = if (packs.usesOnline()) (listOf((provider() ?: OnlineBasemap()).attribution) + packs.attributions(listOf(packs.terrain))).distinct().joinToString(" · ")
+            else packs.attributions().joinToString(" · ").ifBlank { if (packs.basemap.isFile) "© OpenStreetMap contributors" else "" }
+        credits.visibility = if (credits.text.isEmpty()) android.view.View.GONE else android.view.View.VISIBLE
+        updateStatus()
+        m.setStyle(Style.Builder().fromJson(MapStyle.json(packs.basemap, packs.imagery, packs.terrain, packs.mode, provider() ?: OnlineBasemap()))) { st ->
             addImages(st)
             addOverlays(st)
             style = st
             last.forEach { (id, json) -> st.getSourceAs<GeoJsonSource>(id)?.setGeoJson(json) }
             pendingCenter?.let { (p, z) -> center(p, z) }
         }
+    }
+
+    private fun updateStatus() {
+        val online = packs.usesOnline()
+        val connected = connectivity.getNetworkCapabilities(connectivity.activeNetwork)?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+        status.text = context.getString(when {
+            online && !connected -> R.string.map_online_unavailable
+            tileError -> R.string.map_tiles_unavailable
+            online && !loaded -> R.string.map_loading
+            online -> R.string.map_online_streets
+            !packs.basemap.isFile && !packs.imagery.isFile -> R.string.map_offline_missing
+            else -> R.string.map_offline_ready
+        })
     }
 
     private fun addOverlays(st: Style) {
@@ -244,7 +352,7 @@ class MapController(context: Context, private val basemap: () -> File?, private 
 
     @SuppressLint("ClickableViewAccessibility")
     private fun installEditing() {
-        view.setOnTouchListener { _, ev ->
+        mapView.setOnTouchListener { _, ev ->
             val m = map ?: return@setOnTouchListener false
             val ed = editor ?: return@setOnTouchListener false
             when (ev.actionMasked) {
@@ -294,13 +402,25 @@ class MapController(context: Context, private val basemap: () -> File?, private 
     private fun edges(c: List<LatLng>, closed: Boolean = true): List<Pair<LatLng, LatLng>> =
         if (!closed || c.size < 3) c.zipWithNext() else c.indices.map { c[it] to c[(it + 1) % c.size] }
 
-    fun onStart() = view.onStart()
-    fun onResume() = view.onResume()
-    fun onPause() = view.onPause()
-    fun onStop() = view.onStop()
-    fun onLowMemory() = view.onLowMemory()
-    fun onDestroy() = view.onDestroy()
-    fun onSaveInstanceState(out: Bundle) = view.onSaveInstanceState(out)
+    fun onStart() {
+        mapView.onStart()
+        if (!observingNetwork) {
+            connectivity.registerNetworkCallback(NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).build(), networkCallback)
+            observingNetwork = true
+        }
+    }
+    fun onResume() { mapView.onResume(); updateStatus() }
+    fun onPause() = mapView.onPause()
+    fun onStop() {
+        if (observingNetwork) { connectivity.unregisterNetworkCallback(networkCallback); observingNetwork = false }
+        mapView.onStop()
+    }
+    fun onLowMemory() = mapView.onLowMemory()
+    fun onDestroy() {
+        if (observingNetwork) { connectivity.unregisterNetworkCallback(networkCallback); observingNetwork = false }
+        mapView.onDestroy()
+    }
+    fun onSaveInstanceState(out: Bundle) = mapView.onSaveInstanceState(out)
 
     private companion object {
         const val EMPTY = """{"type":"FeatureCollection","features":[]}"""

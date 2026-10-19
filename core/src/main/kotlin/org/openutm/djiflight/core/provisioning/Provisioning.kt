@@ -69,6 +69,8 @@ data class DeviceProvisioning(
     val imagery: ImageryService? = null,
     /** Per-pilot sign-in through the lab's identity server (OIDC + PKCE); none = the roster pick only. */
     @SerialName("pilot_login") val pilotLogin: PilotLoginConfig? = null,
+    /** Optional public map provider override. Absent = OpenStreetMap; never reuses device auth. */
+    @SerialName("online_map") val onlineMap: OnlineBasemap? = null,
 ) {
     /** The roster entry a signed-in pilot is, by id or email; null if the roster doesn't list them. */
     fun rosterEntry(s: PilotSignIn): Pilot? =
@@ -89,6 +91,7 @@ data class DeviceProvisioning(
         }
         if (legalMaxHeightM !in 1.0..500.0) add("legal_max_height_m out of range")
         if (pilots.map { it.id }.toSet().size != pilots.size) add("duplicate pilot ids")
+        onlineMap?.let { addAll(it.problems()) }
         if (checklist.any { it.isBlank() }) add("checklist has an empty item")
         if (checklist.size > 40) add("checklist has more than 40 items")
         imagery?.let { if (it.service.isBlank()) add("imagery.service is empty") }

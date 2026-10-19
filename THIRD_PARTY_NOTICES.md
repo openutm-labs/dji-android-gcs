@@ -20,11 +20,16 @@ Nothing below is committed. Gradle downloads it from Maven Central and Google's 
 | DJI Mobile SDK 4.18, UX SDK 4.16.2 (`com.dji:dji-sdk`, `dji-uxsdk`) | DJI's EULA (developer.dji.com/policies/eula) | v4 `dji` build only. Each package needs its own DJI app key, never committed |
 | DJI Mobile SDK 5.18, wpmzsdk (`com.dji:dji-sdk-v5-aircraft`, `wpmzsdk`) | DJI's EULA | v5 only |
 | MapLibre Native Android | BSD 2-Clause | |
+| OkHttp / Okio | Apache 2.0 | Public map HTTP client and cache |
 | Kotlin standard library, kotlinx.coroutines, kotlinx.serialization | Apache 2.0 | |
 | AndroidX (core, appcompat, recyclerview, constraintlayout, cardview, lifecycle, multidex, legacy-support) | Apache 2.0 | appcompat, recyclerview and constraintlayout because DJI's UI libraries need them |
 | Material Components, Lottie, RxJava 3 / RxAndroid / RxKotlin, Iconics | Apache 2.0 | v5 only: DJI's UI Library needs them |
 | ZXing core, zxing-android-embedded | Apache 2.0 | QR provisioning |
 | JUnit 5 | EPL 2.0 | Tests only |
+
+## Online street maps
+
+Default raster tiles are served by the OpenStreetMap Foundation at `tile.openstreetmap.org`. Map data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), under ODbL. Visible attribution is shown on the map. Use of the public tile service follows its [tile usage policy](https://operations.osmfoundation.org/policies/tiles/): identifiable requests, cache-header support, no bulk/offline downloads or tile prefetch. Service is best effort; administrators can configure a different public raster provider through device setup.
 
 ## Data the labs download (never in the repository or the APK)
 

@@ -32,6 +32,8 @@ jobs:
       - name: JVM tests (core, replay adapter)
         run: ./gradlew :core:test :adapter-fake:test
       # The runner's Android SDK (ANDROID_HOME) switches the Android modules on.
+      - name: Map source and HTTP cache tests (loopback only)
+        run: ./gradlew :app-common:testDebugUnitTest
       - name: Build the sim app
         run: ./gradlew :app-v4:assembleSimDebug
       - uses: actions/upload-artifact@v4

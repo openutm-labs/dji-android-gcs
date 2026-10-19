@@ -171,8 +171,10 @@ public class CameraConfigStorageWidget extends ConstraintLayoutWidget<Object> im
                 statusCapacityValueTextView.setText(CameraUtil.formatVideoTime(getResources(), cameraStorageState.getAvailableRecordingTime()));
             } else if (cameraMode == CameraMode.PHOTO_NORMAL && cameraStorageState.getAvailableCaptureCount() > 0) {
                 statusCapacityValueTextView.setText(String.valueOf(cameraStorageState.getAvailableCaptureCount()));
-            } else {
+            } else if (cameraStorageState.getAvailableCapacity() >= 0) {
                 statusCapacityValueTextView.setText(StringUtils.getResStr(R.string.uxsdk_storage_remaining_space, cameraStorageState.getAvailableCapacity()));
+            } else {
+                statusCapacityValueTextView.setText(R.string.uxsdk_string_default_value);
             }
         } else {
             statusCapacityTitleTextView.setText(getResources().getText(R.string.uxsdk_storage_title_status));

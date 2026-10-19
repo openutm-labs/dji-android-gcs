@@ -5,11 +5,13 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.openutm.djiflight.core.terrain.FileByteSource
 import org.openutm.djiflight.core.terrain.PmTiles
+import org.openutm.djiflight.core.provisioning.OnlineBasemap
+import org.openutm.djiflight.app.RegionPacks
 import java.io.File
 
 /**
- * An offline MapLibre style: local PMTiles only, never online tiles (OSM's servers forbid offline
- * prefetching). The vector layers follow the Protomaps basemap schema v4 (earth, landuse, water, roads,
+ * Offline PMTiles or an online raster street map; online tiles are never bulk-downloaded.
+ * The vector layers follow the Protomaps basemap schema v4 (earth, landuse, water, roads,
  * buildings, boundaries, places, pois), checked against a Protomaps daily build (2026-10-17).
  *
  * Light and plain so it reads in sunlight under the dark controls; the declared area, mission and
@@ -21,11 +23,20 @@ import java.io.File
 object MapStyle {
     const val FONT = "Roboto Regular"
 
-    fun json(basemap: File?, imagery: File?, terrain: File? = null): String {
+    fun json(basemap: File?, imagery: File?, terrain: File? = null, mode: RegionPacks.Mode = RegionPacks.Mode.AUTOMATIC, online: OnlineBasemap = OnlineBasemap()): String {
         val sources = JSONObject()
         val layers = JSONArray()
-        val vector = basemap != null && basemap.isFile
+        val local = mode != RegionPacks.Mode.ONLINE
+        val vector = local && basemap != null && basemap.isFile
+        val localImagery = local && imagery != null && imagery.isFile
+        val onlineStreets = mode == RegionPacks.Mode.ONLINE || (mode == RegionPacks.Mode.AUTOMATIC && !vector && !localImagery)
         layers.put(layer("background", "background", paint = JSONObject().put("background-color", "#D9DEE2")))
+        if (onlineStreets) {
+            sources.put("online-streets", JSONObject().put("type", "raster")
+                .put("tiles", JSONArray().put(online.tileUrl)).put("tileSize", 256)
+                .put("minzoom", 0).put("maxzoom", online.maxZoom).put("attribution", online.attribution))
+            layers.put(layer("online-streets", "raster", "online-streets"))
+        }
         if (vector) {
             sources.put("basemap", JSONObject().put("type", "vector").put("url", "pmtiles://file://${basemap!!.absolutePath}"))
             layers.put(layer("earth", "fill", "basemap", "earth", JSONObject().put("fill-color", "#EFEBE3")))
@@ -46,8 +57,8 @@ object MapStyle {
                 .put("hillshade-exaggeration", 0.5).put("hillshade-shadow-color", "#5B6670")
                 .put("hillshade-highlight-color", "#FFFFFF").put("hillshade-accent-color", "#8A939B")))
         }
-        if (imagery != null && imagery.isFile) {
-            sources.put("imagery", JSONObject().put("type", "raster").put("url", "pmtiles://file://${imagery.absolutePath}").put("tileSize", rasterTileSize(imagery, 256)))
+        if (localImagery) {
+            sources.put("imagery", JSONObject().put("type", "raster").put("url", "pmtiles://file://${imagery!!.absolutePath}").put("tileSize", rasterTileSize(imagery, 256)))
             layers.put(layer("imagery", "raster", "imagery"))
         }
         if (vector) {
@@ -76,7 +87,7 @@ object MapStyle {
                 .also { it.getJSONObject("layout").put("text-size", JSONArray().put("interpolate").put(JSONArray().put("linear")).put(JSONArray().put("zoom"))
                     .put(8).put(match("kind", 11.0, "locality" to 13.0)).put(16).put(match("kind", 14.0, "locality" to 20.0))) })
         }
-        return JSONObject().put("version", 8).put("name", "openutm-offline")
+        return JSONObject().put("version", 8).put("name", if (onlineStreets) "openutm-online" else "openutm-offline")
             .put("glyphs", "asset://glyphs/{fontstack}/{range}.pbf")
             .put("sources", sources).put("layers", layers).toString()
     }

@@ -34,6 +34,8 @@
 
     <!-- Mapping mission -->
     <string name="plan_section_survey">Survey</string>
+    <string name="plan_mission_type">Mission type</string>
+    <string name="plan_camera_unconfirmed">Camera not confirmed: %1$s</string>
     <string name="plan_altitude">Altitude</string>
     <string name="plan_altitude_hint">GSD</string>
     <string name="plan_pattern_grid">Grid</string>

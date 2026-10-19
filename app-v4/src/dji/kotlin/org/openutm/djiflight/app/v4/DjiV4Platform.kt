@@ -1,5 +1,6 @@
 package org.openutm.djiflight.app.v4
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import android.view.LayoutInflater
@@ -42,7 +43,20 @@ object DjiV4Platform : Platform {
         val inflater = LayoutInflater.from(context)
         // Inflated against a parent so the widgets keep their sizes from the layout files.
         val parent = android.widget.FrameLayout(context)
-        return StatusWidgets(inflater.inflate(R.layout.dji_status_leading, parent, false), inflater.inflate(R.layout.dji_status_trailing, parent, false))
+        val leading = inflater.inflate(R.layout.dji_status_leading, parent, false)
+        // The status bar lives outside DJI's camera tree. Toggle its status panel directly,
+        // so opening it does not depend on the SDK event bus being registered after a restart.
+        val toggleStatus = View.OnClickListener {
+            (context as? android.app.Activity)?.findViewById<View>(R.id.pre_flight_check_list)?.let { panel ->
+                panel.visibility = if (panel.visibility == View.VISIBLE) View.INVISIBLE else View.VISIBLE
+            }
+        }
+        leading.setOnClickListener(toggleStatus)
+        // The SDK widget inflates widget_preflight_status.xml internally, outside our XML.
+        @SuppressLint("MissingInflatedId")
+        val statusText = leading.findViewById<View>(dji.ux.R.id.textview_preflight_status)
+        statusText.setOnClickListener(toggleStatus)
+        return StatusWidgets(leading, inflater.inflate(R.layout.dji_status_trailing, parent, false))
     }
 }
 
@@ -78,6 +92,7 @@ class UxCameraView : VideoPreview {
     override fun createView(context: Context): View =
         LayoutInflater.from(context).inflate(R.layout.dji_camera, null, false).also { r ->
             root = r
+            configureAircraftStatusPanel(r.findViewById(R.id.pre_flight_check_list))
             r.viewTreeObserver.addOnGlobalLayoutListener {
                 // The header may use two rows on small screens. Keep scrollable camera panels
                 // below the readouts and inside the remaining stage, capped at DJI's usual size.
@@ -89,6 +104,11 @@ class UxCameraView : VideoPreview {
                             if (panel.layoutParams.height != height) panel.layoutParams = panel.layoutParams.apply { this.height = height }
                         }
                     }
+                }
+                val checklist = r.findViewById<View>(R.id.pre_flight_check_list)
+                val panelWidth = minOf((640 * r.resources.displayMetrics.density * r.resources.configuration.fontScale.coerceAtLeast(1f)).toInt(), r.width)
+                if (panelWidth > 0 && checklist.layoutParams.width != panelWidth) {
+                    checklist.layoutParams = checklist.layoutParams.apply { width = panelWidth }
                 }
                 panelListener?.invoke(panelOpen)
             }

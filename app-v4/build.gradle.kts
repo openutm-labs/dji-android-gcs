@@ -22,8 +22,8 @@ android {
         // MSDK v4.18: minSdk 23, targetSdk 34, 32- and 64-bit ARM. Not eligible for Google Play (4 KB pages).
         minSdk = 23
         targetSdk = 34
-        versionCode = 8
-        versionName = "0.5.3"
+        versionCode = 11
+        versionName = "0.6.2"
         multiDexEnabled = true
         testInstrumentationRunner = "org.openutm.djiflight.test.PanamaSetupSmoke"
         buildConfigField("String", "DEV_BLENDER_URL", "\"$devBlenderUrl\"")
@@ -114,7 +114,7 @@ dependencies {
     "djiCompileOnly"(libs.dji.sdk.v4.provided)
     // DJI's UI Library: camera view, camera settings, status, dashboard, take-off/RTH, pre-flight checklist.
     // Its POM drags in its own SDK (4.16.2) and three map SDKs for its MapWidget, which we don't use
-    // (our map is offline MapLibre): Google Play services (absent on the Smart Controller), AMap, Mapbox.
+    // (our map uses MapLibre): Google Play services (absent on the Smart Controller), AMap, Mapbox.
     "djiImplementation"(libs.dji.uxsdk.v4) {
         exclude(group = "com.dji", module = "dji-sdk")
         exclude(group = "com.dji", module = "library-anti-distortion")

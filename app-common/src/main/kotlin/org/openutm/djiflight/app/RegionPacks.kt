@@ -27,9 +27,16 @@ import java.util.Date
  *   basemap.pmtiles  vector, Protomaps schema (an OSM extract cut with `pmtiles extract`)
  *   imagery.pmtiles  raster, e.g. the lab's own orthomosaics
  *   terrain.pmtiles  Terrarium heights, e.g. cut from Mapterhorn: ground heights, clearance, hillshade
- * The app never fetches map tiles online.
+ * Automatic mode prefers these files; online streets are the default without a local map pack.
  */
 class RegionPacks(private val context: Context) {
+    enum class Mode { AUTOMATIC, ONLINE, OFFLINE }
+    private val preferences = context.getSharedPreferences("map-display", Context.MODE_PRIVATE)
+    var mode: Mode
+        get() = runCatching { Mode.valueOf(preferences.getString("mode", Mode.AUTOMATIC.name)!!) }.getOrDefault(Mode.AUTOMATIC)
+        set(value) { preferences.edit().putString("mode", value.name).apply(); configurationChanged() }
+    fun configurationChanged() { _version.value++ }
+    fun usesOnline(): Boolean = mode == Mode.ONLINE || (mode == Mode.AUTOMATIC && !basemap.isFile && !imagery.isFile)
     val dir = File(context.filesDir, "maps").apply { mkdirs() }
     val basemap = File(dir, "basemap.pmtiles")
     val imagery = File(dir, "imagery.pmtiles")
@@ -92,7 +99,7 @@ class RegionPacks(private val context: Context) {
      * Credits the map files ask for (OpenStreetMap's ODbL requires it), from each file's own
      * metadata, HTML tags removed: e.g. "© OpenStreetMap", "© Mapterhorn".
      */
-    fun attributions(): List<String> = listOf(basemap, imagery, terrain).filter { it.isFile }.mapNotNull { f ->
+    fun attributions(files: List<File> = listOf(basemap, imagery, terrain)): List<String> = files.filter { it.isFile }.mapNotNull { f ->
         runCatching {
             val meta = FileByteSource(f).use { PmTiles(it).metadataJson() }
             org.json.JSONObject(meta).optString("attribution").replace(Regex("<[^>]*>"), "").replace("&copy;", "©").trim().takeIf { it.isNotEmpty() }

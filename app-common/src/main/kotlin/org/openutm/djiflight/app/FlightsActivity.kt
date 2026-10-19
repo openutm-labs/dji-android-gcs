@@ -47,6 +47,7 @@ class FlightsActivity : Activity() {
     private var pendingExport: Pair<String, String>? = null // flightId to "geojson" | "csv"
     private lateinit var list: ListView
     private lateinit var detail: LinearLayout
+    private lateinit var removeOld: ActionButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,7 +55,7 @@ class FlightsActivity : Activity() {
         graph.start(this)
         val bar = topBar(getString(R.string.flights_title)) { finish() }
         bar.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
-        bar.addView(ActionButton(this).set(getString(R.string.flights_remove_old), R.drawable.ic_trash, Kind.SECONDARY).apply {
+        removeOld = ActionButton(this).set(getString(R.string.flights_remove_old), R.drawable.ic_trash, Kind.SECONDARY).apply {
             setOnClickListener {
                 Sheet(this@FlightsActivity).title(getString(R.string.flights_remove_title))
                     .message(getString(R.string.flights_remove_message))
@@ -64,7 +65,8 @@ class FlightsActivity : Activity() {
                         refresh()
                     }.show()
             }
-        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(44)))
+        }
+        bar.addView(removeOld, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(44)))
         findViewById<LinearLayout>(R.id.topBar).addView(bar, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         list = findViewById(R.id.list)
         detail = findViewById(R.id.detail)
@@ -75,6 +77,8 @@ class FlightsActivity : Activity() {
     private fun refresh() {
         flights = graph.service.snapshots().filter { it.plan != null }.sortedByDescending { it.lastEventAt }
         photos = flights.associate { it.flightId to graph.service.photoStats(it.flightId) }
+        removeOld.isEnabled = flights.isNotEmpty()
+        list.visibility = if (flights.isEmpty()) View.GONE else View.VISIBLE
         if (selected == null || flights.none { it.flightId == selected }) selected = flights.firstOrNull()?.flightId
         list.adapter = Rows()
         renderDetail()
@@ -135,6 +139,11 @@ class FlightsActivity : Activity() {
         val f = flights.firstOrNull { it.flightId == selected }
         if (f == null) {
             detail.addView(text(17f, R.color.text2).apply { text = getString(R.string.flights_empty) })
+            val setupNeeded = graph.provisioning.value == null
+            detail.addView(ActionButton(this).set(getString(if (setupNeeded) R.string.setup_title else R.string.fly_menu_plan),
+                if (setupNeeded) R.drawable.ic_sliders else R.drawable.ic_plan, Kind.PRIMARY).apply {
+                setOnClickListener { startActivity(Intent(this@FlightsActivity, if (setupNeeded) SetupActivity::class.java else PlanActivity::class.java)) }
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(56)).apply { topMargin = dp(16) })
             return
         }
         val plan = f.plan!!

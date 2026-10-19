@@ -66,7 +66,16 @@ class DjiPanelsActivity : AppCompatActivity() {
     }
 
     private fun wireClose(v: View) {
-        if (v.id == dji.v5.ux.R.id.setting_menu_header_close && !v.hasOnClickListeners()) v.setOnClickListener { finish() }
+        if (v.id == dji.v5.ux.R.id.setting_menu_header_close) {
+            // The vendor font icon can be blank on controller builds. Use a packaged drawable.
+            if (v is android.widget.ImageView && v.tag != "openutm-close") {
+                v.setImageResource(org.openutm.djiflight.app.R.drawable.ic_close)
+                v.imageTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
+                v.contentDescription = getString(org.openutm.djiflight.app.R.string.fly_close)
+                v.tag = "openutm-close"
+            }
+            if (!v.hasOnClickListeners()) v.setOnClickListener { finish() }
+        }
         if (v is ViewGroup) for (i in 0 until v.childCount) wireClose(v.getChildAt(i))
     }
 
