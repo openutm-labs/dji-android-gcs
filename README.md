@@ -1,33 +1,49 @@
-# dji-android-gcs: DJI flights into OpenUTM (Flight Blender)
+# OpenUTM DJI Ground Control Station
 
-An Android ground control station (GCS) for DJI drones, connecting to OpenUTM, built for the WeRobotics Flying Labs: fly a DJI drone, declare the flight, and get its telemetry into Flight Blender, with or without a network at the site. One repository, two apps: `app-v4` (DJI Mobile SDK v4) and `app-v5` (Mobile SDK v5).
+An Android ground control station for DJI drones, built for Flying Labs and drone operators. It connects flight planning, on-device recording and telemetry uploads to [Flight Blender](https://github.com/openutm/flight-blender). The repository contains separate apps for DJI Mobile SDK v4 and v5, with shared screens and a DJI-free core.
 
-- **Design and decisions:** [docs/12-dji-app-design.md](docs/12-dji-app-design.md)
-- **Background (DJI integration options):** [docs/11-dji-integration.md](docs/11-dji-integration.md)
-- **DroneDeploy: integration and pilot migration:** [docs/13-dronedeploy.md](docs/13-dronedeploy.md)
-- **Survey expansion and Mini 2 qualification:** [docs/15-survey-expansion-and-mini2.md](docs/15-survey-expansion-and-mini2.md)
-- **Panama distribution installers (0.5.3):** [install, configure and share](docs/17-panama-apk-distribution.md)
-- **Connect a phone to Panama:** [docs/16-connect-panama.md](docs/16-connect-panama.md)
-- **Bench and field test plan:** [docs/14-dji-field-test-plan.md](docs/14-dji-field-test-plan.md)
+## Project status
 
-**Panama distribution update (2026-10-19, 0.5.1):** signed release builds default to Panama in first-run setup, support private device credential entry with a protected-read check, and explain missing offline maps. Operator identities and OAuth secrets are supplied per device. Existing saved setups are preserved.
+This is preview software with hardware and flight qualification still in progress. Mini 2 automatic mission execution is disabled in release builds. See the [qualification gates and remaining gaps](docs/15-survey-expansion-and-mini2.md#qualification-gates) for the current validation status.
 
-**QR scanner fix (0.5.2):** provisioning uses app-owned outer and nested scanner layouts so DJI's incompatible `zxing_*` resources cannot replace JourneyApps views and crash on opening Scan QR code. The release smoke check now opens the real scan tile, checks all three view types and cancels back to setup.
+The reporting scope is Flight Blender network integration. Broadcast Remote ID is not implemented.
 
-**Camera panel sizing fix (0.5.3):** a DJI checklist or settings panel opened while the camera is in the map's inset promotes the camera to the full stage. Panels keep their normal readable size, and the camera widget tree stays attached.
+## Capabilities
 
-**Development update (2026-10-19, 0.5.0):** five-direction, corridor and layered-surround planning; local saved plans; concave-area routing; network diagnostics; an explicitly opted-in debug-only Mini 2 Virtual Stick stop-and-shoot executor. All release builds keep Mini 2 automatic execution disabled pending hardware qualification. See [scope, limits and the remaining feature backlog](docs/15-survey-expansion-and-mini2.md). Broadcast Remote ID is excluded; this work targets Flight Blender network reporting.
+- Flight declarations, pre-flight checks, flight history and export, with telemetry recorded locally and uploaded when a network is available.
+- Grid, crosshatch, perimeter, five-direction, corridor and layered-surround survey planning; saved plans and JSON import/export. Execution depends on the aircraft and SDK support.
+- Offline basemaps, imagery and terrain from local PMTiles packs, with restriction-zone overlays and planning warnings.
+- DJI camera views and settings, flight status and aircraft controls through the appropriate SDK adapter.
+- Administrator-provided device setup, pilot rosters and optional Passport pilot sign-in.
 
-**Previous baseline (2026-10-18, 0.4.0):** two apps, all screens built and redesigned (docs/12, The app); not yet flown with a real aircraft.
-- **`app-v4`** (DJI MSDK v4.18): Phantom 4 Pro V2.0, Mavic 2 Pro, Air 2S, Mavic Air 2, Mini 2.
-- **`app-v5`** (DJI MSDK v5.18): Mavic 3 Enterprise, 3T and 3M; Matrice 400 with a P1, L2, H30 or H30T.
-- **Screens:** Fly, Plan (manual flights; Grid, Crosshatch and Perimeter surveys), Pre-flight (lab checklist, aircraft checks, settings, calibration, the take-off height choice), Flights (export), Setup (device setup, maps, terrain, zones, updates), pilot sign-in; shared by both apps. Laid out as DJI's apps are; landscape, full screen. Every string is an Android resource, ready for translation.
-- **Maps:** offline basemap with text labels, terrain (ground heights, the route's clearance, height above ground, hillshade) and imagery, each one local PMTiles file (`tools/maps/region-pack.sh`).
-- **Tested:** 100 JVM tests, 7 of them against the local Blender.
-- **Run on Android 14 and Android 7.1 emulators:** every flow in docs/12, Testing, against the local Blender; pilot sign-in against a local Flight Passport.
-- **Field test plan:** [docs/14](docs/14-dji-field-test-plan.md).
-- **v4 `dji` build:** registers with DJI and shows DJI's UI Library widgets on the emulator. Needs the P4 Pro V2.0 next (docs/12, Open items).
-- **v5:** DJI's own WPML validator accepts every mission file the app writes; the app registers with DJI under its own key on the emulator. Needs a Mavic 3E or M400 next.
+## Choose an app
+
+| App | SDK | Aircraft integration targets |
+|---|---|---|
+| `app-v4` | DJI Mobile SDK v4 | Phantom 4 Pro V2.0, Mavic 2 Pro, Air 2S, Mavic Air 2, Mini 2 |
+| `app-v5` | DJI Mobile SDK v5 | Mavic 3 Enterprise, 3T and 3M; Matrice 400 with supported payloads |
+| `app-v4` — `sim` flavour | No DJI SDK | Recorded-track replay for development and training |
+
+Aircraft/controller compatibility and mission execution vary by model. Check the [aircraft and mission limits](docs/15-survey-expansion-and-mini2.md) and confirm your equipment with the coordinator.
+
+## Get started
+
+For operators, start with the [APK installation and device setup guide (English / Español)](docs/17-panama-apk-distribution.md). Fresh DJI installs default to Panama; administrators supply each device's private setup and approve Passport access. Offline map packs are installed separately.
+
+For developers, follow [Build and test](#build-and-test) below. The simulator can be used without a DJI aircraft.
+
+## Documentation
+
+- [Architecture and design decisions](docs/12-dji-app-design.md)
+- [DJI integration options](docs/11-dji-integration.md)
+- [DroneDeploy integration and pilot migration](docs/13-dronedeploy.md)
+- [Survey planning, Mini 2 qualification and feature gaps](docs/15-survey-expansion-and-mini2.md)
+- [Connect a phone to Panama](docs/16-connect-panama.md)
+- [Install, configure and distribute the APKs](docs/17-panama-apk-distribution.md)
+- [Bench and field test plan](docs/14-dji-field-test-plan.md)
+- [Changelog](CHANGELOG.md)
+
+## Repository layout
 
 | Module | What | Builds on |
 |---|---|---|
@@ -209,3 +225,7 @@ These two need Python with pyproj and the [UTM connector](https://github.com/att
 - `tools/mavlink_journal_to_track.py` turns any armed segment of the connector's MAVLink journal into a replay track:
   - `--list` shows the segments;
   - `--segment N --out …` writes one.
+
+## License
+
+The project's own code is licensed under [Apache 2.0](LICENSE). DJI SDK binaries and other dependencies have separate terms; see [third-party notices](THIRD_PARTY_NOTICES.md).
