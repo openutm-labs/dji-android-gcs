@@ -52,6 +52,7 @@ class BlenderBackend(
     private val submittedBy: String,
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) : UtmBackend {
+    override val serverId = org.openutm.djiflight.core.sync.ServerIdentity.of(baseUrl)
     private val base = baseUrl.trimEnd('/')
 
     override suspend fun declare(plan: DeclarationPlan): BackendResult<String> {

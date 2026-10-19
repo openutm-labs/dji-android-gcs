@@ -96,6 +96,10 @@ class CrcLineFile(val file: File) {
  */
 class FlightJournal(val dir: File, private val json: Json = JournalJson) {
     val flightId: String = dir.name
+    /** Immutable destination association; malformed metadata must never behave as unassigned. */
+    val serverId: String? = File(dir, "server-id").takeIf { it.exists() }?.readText()?.trim()?.let {
+        if (it.matches(Regex("[a-f0-9]{64}"))) it else "invalid-or-unassigned"
+    }
     private val events = CrcLineFile(File(dir, "events.log"))
     private val samples = CrcLineFile(File(dir, "samples.log"))
     private val cursorFile = File(dir, "cursor")
@@ -152,7 +156,7 @@ class SampleReader internal constructor(private val file: CrcLineFile, private v
 }
 
 /** All flights under one directory (app-private storage on Android). */
-class FlightRepository(val root: File) {
+class FlightRepository(val root: File, val currentServerId: () -> String? = { null }) {
     init {
         root.mkdirs()
     }
@@ -160,8 +164,42 @@ class FlightRepository(val root: File) {
     fun create(flightId: String): FlightJournal {
         val dir = File(root, flightId)
         require(!dir.exists()) { "flight $flightId already exists" }
-        dir.mkdirs()
+        check(dir.mkdirs()) { "could not create flight directory" }
+        currentServerId()?.let { bind(dir, it) }
         return FlightJournal(dir)
+    }
+
+    /**
+     * One-time upgrade, BEFORE replacing the saved setup. Unknown legacy origins stay blocked.
+     * Never opens event/sample writers and never overwrites an existing association.
+     */
+    fun migrateLegacy(serverId: String?) {
+        // DJI may initialize the Application in its accessory process too.
+        RandomAccessFile(File(root, ".server-binding.lock"), "rw").use { lockFile ->
+            lockFile.channel.lock().use {
+                val marker = File(root, ".server-binding-v1")
+                if (marker.exists()) return
+                if (serverId != null) root.listFiles { f -> f.isDirectory }?.forEach { dir ->
+                    if (!File(dir, "server-id").exists()) bind(dir, serverId)
+                }
+                atomicWrite(marker, "1")
+            }
+        }
+    }
+
+    private fun bind(dir: File, serverId: String) {
+        require(serverId.matches(Regex("[a-f0-9]{64}"))) { "invalid server identity" }
+        check(!File(dir, "server-id").exists()) { "flight server already assigned" }
+        atomicWrite(File(dir, "server-id"), serverId)
+    }
+
+    private fun atomicWrite(file: File, value: String) {
+        val tmp = File(file.path + ".tmp")
+        FileOutputStream(tmp).use { out ->
+            out.write(value.toByteArray(Charsets.UTF_8))
+            out.fd.sync()
+        }
+        check(tmp.renameTo(file)) { "could not save flight server association" }
     }
 
     fun open(flightId: String): FlightJournal = FlightJournal(File(root, flightId).also { require(it.isDirectory) { "no flight $flightId" } })

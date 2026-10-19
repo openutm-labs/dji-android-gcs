@@ -41,6 +41,12 @@ sealed interface BackendResult<out T> {
  * could be added beside [org.openutm.djiflight.core.blender.BlenderBackend] (docs/12, decision 2).
  */
 interface UtmBackend {
+    /** Stable destination identity. Null is reserved for unconfigured backends and test doubles. */
+    val serverId: String? get() = null
+
+    /** Freeze the destination for an entire sync pass, including retries within that pass. */
+    fun snapshot(): UtmBackend = this
+
     suspend fun declare(plan: DeclarationPlan): BackendResult<String>
 
     /** The id of an earlier declaration made with [clientRef], or null if there is none. */

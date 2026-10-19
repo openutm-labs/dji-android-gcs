@@ -21,22 +21,30 @@ class ZoneService(
     private val clock: Clock,
 ) {
     @Serializable
-    private data class Cache(val fetchedAtMs: Long, val body: String)
+    private data class Cache(val fetchedAtMs: Long, val body: String, val serverId: String? = null)
 
     private val json = Json { ignoreUnknownKeys = true }
     private val _index = MutableStateFlow(load())
     val index: StateFlow<ZoneIndex?> = _index.asStateFlow()
 
+    /** Reload only zones belonging to the selected server; old development zones are not Panama zones. */
+    @Synchronized
+    fun backendChanged() { _index.value = load() }
+
     fun ageMs(): Long? = _index.value?.let { clock.nowMs() - it.fetchedAtMs }
 
     /** Zones around [area] (grown by [marginM]) valid from now to [daysAhead] days ahead. */
     suspend fun refresh(area: BBox, marginM: Double = 5_000.0, daysAhead: Int = 2): BackendResult<ZoneIndex> {
+        val destination = backend.snapshot()
         val now = clock.nowMs()
-        return when (val r = backend.zones(area.expandedBy(marginM), now, now + daysAhead * 86_400_000L)) {
+        return when (val r = destination.zones(area.expandedBy(marginM), now, now + daysAhead * 86_400_000L)) {
             is BackendResult.Ok -> {
                 val idx = runCatching { ZoneIndex.parseBlender(r.value, now) }.getOrElse { return BackendResult.Rejected(200, "zone list unreadable: ${it.message}") }
-                save(Cache(now, r.value))
-                _index.value = idx
+                synchronized(this) {
+                    if (backend.serverId != destination.serverId) return BackendResult.Transient("UTM server changed; refresh zones again")
+                    save(Cache(now, r.value, destination.serverId))
+                    _index.value = idx
+                }
                 BackendResult.Ok(idx)
             }
             is BackendResult.Rejected -> r
@@ -50,6 +58,7 @@ class ZoneService(
     private fun load(): ZoneIndex? = runCatching {
         if (!cacheFile.isFile) return null
         val c = json.decodeFromString(Cache.serializer(), cacheFile.readText())
+        if (c.serverId != backend.serverId) return null
         ZoneIndex.parseBlender(c.body, c.fetchedAtMs)
     }.getOrNull()
 

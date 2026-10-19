@@ -133,7 +133,7 @@ class FlightService(
         // Open each journal once: a second instance would be a second writer.
         for (j in repo.list()) if (flights.none { it.journal.flightId == j.flightId }) open(j)
         if (active == null) {
-            active = flights.lastOrNull { !it.recorder.snapshot.recordingClosed }
+            active = flights.lastOrNull { !it.recorder.snapshot.recordingClosed && it.journal.serverId == repo.currentServerId() }
             active?.let(::watch)
         }
         scope.launch { adapter.link.collect(::onLink) }
@@ -162,6 +162,7 @@ class FlightService(
     suspend fun plan(plan: FlightPlan): FlightSnapshot {
         val f = open(repo.create(plan.flightId))
         val snap = f.actor.record(FlightEvent.Planned(clock.nowMs(), plan))
+        check(f.journal.serverId == repo.currentServerId()) { "UTM server changed while saving the plan. Review the selected server and create a new plan." }
         active = f
         watch(f)
         (adapter.link.value as? LinkState.Connected)?.let { f.actor.offerAircraft(it.identity, clock.nowMs()) }
@@ -195,7 +196,7 @@ class FlightService(
     suspend fun cancel() = activeCommand { FlightEvent.CancelRequested(it) }
 
     private suspend fun activeCommand(make: (Long) -> FlightEvent): FlightSnapshot? {
-        val f = active ?: return null
+        val f = currentActive() ?: return null
         val snap = f.actor.record(make(clock.nowMs()))
         kick.trySend(Unit)
         return snap
@@ -203,12 +204,21 @@ class FlightService(
 
     fun onDeviceFix(fix: GnssFix) {
         (clock as? org.openutm.djiflight.core.time.CorrectedClock)?.offsetMs = fix.gnssTimeMs - fix.deviceTimeMs
-        active?.actor?.offerFix(fix)
+        currentActive()?.actor?.offerFix(fix)
     }
 
     fun setOnline(online: Boolean) {
         _status.update { it.copy(online = online) }
         if (online) kick.trySend(Unit)
+    }
+
+    /** Keep history, but never record a new server's aircraft states into an old server's flight. */
+    fun backendChanged() {
+        if (active?.journal?.serverId != repo.currentServerId()) {
+            active = null
+            _status.update { it.copy(activeFlight = null, lastSync = null) }
+        }
+        syncSoon()
     }
 
     fun syncSoon() {
@@ -218,12 +228,15 @@ class FlightService(
     /** One sync pass over every flight that isn't finished on the server. */
     suspend fun syncAll(): List<SyncOutcome> = syncMutex.withLock {
         val out = ArrayList<SyncOutcome>()
+        var activeOutcome: SyncOutcome? = null
         for (f in flights) {
             val snap = f.actor.current()
             if (snap.serverClosed || snap.plan == null) continue
-            out += sync.syncOnce(snap, f.journal, f.recorder.lastRecordedSeq, f.actor::record)
+            val outcome = sync.syncOnce(snap, f.journal, f.recorder.lastRecordedSeq, f.actor::record)
+            out += outcome
+            if (currentActive() === f) activeOutcome = outcome
         }
-        _status.update { s -> s.copy(lastSync = out.lastOrNull() ?: s.lastSync, pendingFlights = pendingCount()) }
+        _status.update { s -> s.copy(lastSync = activeOutcome ?: out.lastOrNull() ?: s.lastSync, pendingFlights = pendingCount()) }
         out
     }
 
@@ -261,6 +274,8 @@ class FlightService(
         return flights.filter { it.journal.exported && it.actor.snapshot.value.lastEventAt < cutoff }.count { delete(it.journal.flightId) }
     }
 
+    private fun currentActive(): Flight? = active?.takeIf { it.journal.serverId == repo.currentServerId() }
+
     private fun find(flightId: String) = flights.firstOrNull { it.journal.flightId == flightId }
 
     private fun open(j: FlightJournal): Flight {
@@ -274,7 +289,7 @@ class FlightService(
         scope.launch {
             var phase: Phase? = null
             f.actor.snapshot.collect { snap ->
-                if (active === f) _status.update { it.copy(activeFlight = snap) }
+                if (currentActive() === f) _status.update { it.copy(activeFlight = snap) }
                 // Take-off, landing, finish: the sync loop may be asleep with nothing pending; wake it.
                 if (snap.phase != phase) {
                     phase = snap.phase
@@ -286,7 +301,7 @@ class FlightService(
 
     private fun onLink(link: LinkState) {
         _status.update { it.copy(link = link) }
-        if (link is LinkState.Connected) active?.actor?.offerAircraft(link.identity, clock.nowMs())
+        if (link is LinkState.Connected) currentActive()?.actor?.offerAircraft(link.identity, clock.nowMs())
     }
 
     /** Staleness is measured on a monotonic clock, so a wall-clock correction can't fake or hide it. */
@@ -294,7 +309,7 @@ class FlightService(
 
     private fun onState(s: DroneState) {
         lastStateAtMs = monoMs()
-        active?.actor?.offerState(s)
+        currentActive()?.actor?.offerState(s)
         _status.update { it.copy(lastState = s, telemetryStale = false) }
     }
 

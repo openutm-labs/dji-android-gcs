@@ -77,6 +77,7 @@ data class DeviceProvisioning(
     fun problems(allowDevAuth: Boolean): List<String> = buildList {
         if (v != 1) add("unsupported provisioning version $v")
         if (!blenderUrl.startsWith("https://") && !(allowDevAuth && blenderUrl.startsWith("http://"))) add("blender_url must be https")
+        if (runCatching { org.openutm.djiflight.core.sync.ServerIdentity.of(blenderUrl) }.isFailure) add("blender_url must be a valid server URL without credentials, query or fragment")
         if (deviceName.isBlank()) add("device_name is empty")
         if (lab.isBlank() || operatorId.isBlank()) add("lab and operator_id are required")
         when (auth) {

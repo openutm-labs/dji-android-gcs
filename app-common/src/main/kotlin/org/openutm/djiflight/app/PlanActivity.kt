@@ -445,7 +445,7 @@ class PlanActivity : Activity() {
 
     private fun buildDetails() {
         val p = graph.provisioning.value ?: return
-        pilots = p.pilots.ifEmpty { if (graph.platform.debug) listOf(Pilot("pilot-dev", "Dev pilot")) else emptyList() }
+        pilots = p.pilots.ifEmpty { if (p.auth is org.openutm.djiflight.core.provisioning.AuthConfig.Dev) listOf(Pilot("pilot-dev", "Dev pilot")) else emptyList() }
         val connected = (graph.service.status.value.link as? LinkState.Connected)?.identity
         aircraft = p.aircraft.map { AircraftChoice("${it.model.ifBlank { getString(R.string.plan_aircraft_model_fallback) }} ${it.registration}", it.serial, it.registration) }
             .let { list -> if (connected != null && list.none { it.serial == connected.serial }) listOf(AircraftChoice(getString(R.string.plan_aircraft_unlisted, connected.model), connected.serial, "UNREGISTERED")) + list else list }

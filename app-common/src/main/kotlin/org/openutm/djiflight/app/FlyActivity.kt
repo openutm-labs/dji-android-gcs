@@ -673,6 +673,7 @@ class FlyActivity : Activity() {
         val s = graph.service.status.value
         val flight = s.activeFlight
         val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        list.addView(Sheet.row(this, getString(R.string.setup_row_utm_server), graph.provisioning.value?.blenderUrl ?: getString(R.string.setup_not_set)))
         list.addView(Sheet.row(this, getString(R.string.network_status_connection), getString(if (s.online) R.string.network_status_online else R.string.network_status_offline)))
         list.addView(Sheet.row(this, getString(R.string.network_status_aircraft), getString(if (s.link is LinkState.Connected && !s.telemetryStale && s.lastState != null) R.string.network_status_fresh else R.string.network_status_stale)))
         list.addView(Sheet.row(this, getString(R.string.network_status_declaration), getString(if (flight?.declarationId != null) R.string.network_status_declared else R.string.network_status_not_declared)))
