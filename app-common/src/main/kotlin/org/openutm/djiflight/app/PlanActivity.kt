@@ -447,7 +447,7 @@ class PlanActivity : Activity() {
         val p = graph.provisioning.value ?: return
         pilots = p.pilots.ifEmpty { if (p.auth is org.openutm.djiflight.core.provisioning.AuthConfig.Dev) listOf(Pilot("pilot-dev", "Dev pilot")) else emptyList() }
         val connected = (graph.service.status.value.link as? LinkState.Connected)?.identity
-        aircraft = p.aircraft.map { AircraftChoice("${it.model.ifBlank { getString(R.string.plan_aircraft_model_fallback) }} ${it.registration}", it.serial, it.registration) }
+        aircraft = p.aircraft.map { AircraftChoice("${it.model.ifBlank { getString(R.string.plan_aircraft_model_fallback) }} ${it.registration}".trim(), it.serial, it.registration) }
             .let { list -> if (connected != null && list.none { it.serial == connected.serial }) listOf(AircraftChoice(getString(R.string.plan_aircraft_unlisted, connected.model), connected.serial, "UNREGISTERED")) + list else list }
         val saved = graph.sites.all()
         siteNames = listOf(getString(R.string.plan_site_here)) + saved.map { it.name } + listOf(getString(R.string.plan_site_map))
@@ -797,7 +797,7 @@ class PlanActivity : Activity() {
         if (signInButton?.label?.text?.toString() != signInLabel) signInButton?.set(signInLabel, null, Kind.SECONDARY)
         pilotSpinner.show(session == null)
         val pilot = session?.let { signedInName(it) } ?: pilots.getOrNull(pilotSpinner.selectedItemPosition)?.name ?: getString(R.string.plan_no_pilot)
-        val ac = aircraft.getOrNull(aircraftSpinner.selectedItemPosition)?.registration ?: getString(R.string.plan_no_aircraft)
+        val ac = aircraft.getOrNull(aircraftSpinner.selectedItemPosition)?.let { it.registration.ifBlank { it.label } } ?: getString(R.string.plan_no_aircraft)
         val whenText = if (startMs <= graph.clock.nowMs() + 60_000) getString(R.string.plan_when_now) else DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(startMs))
         detailsSummary.setIfChanged(
             getString(
@@ -844,6 +844,8 @@ class PlanActivity : Activity() {
         terrainText.setTextColor(color(if (terrainWarn) R.color.warn else R.color.text2))
         if (terrainBlock != null) problem = problem ?: terrainBlock
         if (login?.required == true && session == null) problem = problem ?: getString(R.string.plan_problem_sign_in)
+        if (session == null && pilots.getOrNull(pilotSpinner.selectedItemPosition) == null) problem = problem ?: getString(R.string.plan_refuse_no_pilots)
+        if (aircraft.getOrNull(aircraftSpinner.selectedItemPosition) == null) problem = problem ?: getString(R.string.plan_refuse_no_aircraft)
         footerNote.setIfChanged(problem ?: getString(if (graph.service.status.value.online) R.string.plan_footer_online else R.string.plan_footer_offline))
         footerNote.setTextColor(color(if (problem != null) R.color.warn else R.color.text2))
         declareButton.isEnabled = problem == null

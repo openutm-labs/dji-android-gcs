@@ -16,7 +16,9 @@ The ordinary v4 0.5.0 build was installed on a OnePlus Nord CE and configured wi
 
 No declaration or telemetry was submitted during this check. Existing development flights retained their development-server association; their event, sample and upload-cursor files were unchanged, and no new flight directory was created. The previous setup was retained as an encrypted on-device backup. The temporary plaintext setup file was removed; credentials and tokens are not in this repository.
 
-The pilot and aircraft rosters are empty. New declaration submission remains blocked by the missing pilot roster. Approved pilot/aircraft details, write access, downstream visibility and real-flight reporting still require validation; successful authentication and a protected read do not qualify those paths.
+The initial pilot and aircraft rosters were empty, which blocked new declarations locally. After the owner supplied the pilot name, the phone was configured with that pilot and the Mini 2 serial previously read from the aircraft. No aircraft registration number was supplied; that field remains blank. The declaration endpoint identifies the aircraft by serial.
+
+The owner subsequently requested a ground-only declaration check. The Plan screen saved a new operation and received a declaration ID from Panama. No activation, telemetry or aircraft controls were requested. This verifies declaration creation; real-flight reporting and downstream visibility remain separate validation steps. Plan now shows missing pilot/aircraft entries before enabling Save and declare, and displays the aircraft model when no registration number is supplied.
 
 ## 1. Get the phone's setup from your administrator
 
@@ -70,4 +72,5 @@ Old flights stay in history and are not replayed to Panama. Restore their origin
 | No declaration | Open Plan, review the operation and use Save and declare. Merely opening the app does not create one. |
 | Pending samples or declaration window closed | Restore internet access and check the operation window. Keep/export the local record; do not create duplicate declarations to force old telemetry through. |
 | No pilot or aircraft choices | Ask the administrator for the approved roster and registration entries in the setup. |
+| Grey map background | Install a basemap or imagery pack covering the planned area from Device setup → Offline maps. Server authentication does not download maps; this app currently uses local map packs. |
 | No zones after switching servers | Download the selected server's zones from Device setup. Do not rely on zones cached for development. |
