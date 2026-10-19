@@ -10,6 +10,14 @@ Panama services:
 | Flight Passport | <https://auth.panama.openutm.net/accounts/login/> | Administrator-approved accounts and device credentials |
 | Spotlight | <https://spotlight.panama.openutm.net/> | View operations, subject to your access |
 
+## Verified connection (19 October 2026)
+
+The ordinary v4 0.5.0 build was installed on a OnePlus Nord CE and configured with owner-approved Panama client credentials, stored through the app's encrypted setup API. On the phone, the app's token provider obtained a token and its HTTPS transport received HTTP 200 from the protected declaration-list endpoint. The Panama endpoint remained selected after an app restart, and Device setup displayed the hosted address and approved operator.
+
+No declaration or telemetry was submitted during this check. Existing development flights retained their development-server association; their event, sample and upload-cursor files were unchanged, and no new flight directory was created. The previous setup was retained as an encrypted on-device backup. The temporary plaintext setup file was removed; credentials and tokens are not in this repository.
+
+The pilot and aircraft rosters are empty. New declaration submission remains blocked by the missing pilot roster. Approved pilot/aircraft details, write access, downstream visibility and real-flight reporting still require validation; successful authentication and a protected read do not qualify those paths.
+
 ## 1. Get the phone's setup from your administrator
 
 Ask your Panama administrator for an **OpenUTM device setup file or QR code for this phone**. If you need a Passport account, contact your administrator. Do not use public self-sign-up as an onboarding step.
