@@ -64,6 +64,11 @@ class SetupActivity : Activity() {
         val bar = topBar(getString(R.string.setup_title)) { finish() }
         findViewById<LinearLayout>(R.id.topBar).addView(bar, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         nav = findViewById(R.id.nav)
+        val config = resources.configuration
+        findViewById<android.widget.ScrollView>(R.id.navScroll).layoutParams.width = dp(
+            maxOf(config.screenWidthDp * 0.30f, 168 * config.fontScale)
+                .coerceAtMost(minOf(220 * config.fontScale, config.screenWidthDp * 0.45f)).toInt(),
+        )
         content = findViewById(R.id.content)
         render()
     }
@@ -72,9 +77,12 @@ class SetupActivity : Activity() {
         nav.removeAllViews()
         for (s in Section.entries) {
             nav.addView(ActionButton(this).set(getString(s.title), s.icon, if (s == section) Kind.PRIMARY else Kind.QUIET).apply {
+                fitLabel = false
+                label.maxLines = 2
+                label.gravity = Gravity.CENTER_VERTICAL or Gravity.START
                 gravity = Gravity.CENTER_VERTICAL or Gravity.START
                 setOnClickListener { section = s; render() }
-            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(52)).apply { bottomMargin = dp(6) })
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(6) })
         }
         content.removeAllViews()
         when (section) {
@@ -89,8 +97,13 @@ class SetupActivity : Activity() {
     private fun body(s: String, colorId: Int = R.color.text2) = content.addView(text(16f, colorId).apply { text = s; setLineSpacing(dp(3).toFloat(), 1f); setPadding(0, 0, 0, dp(8)) })
     private fun row(l: String, v: String) = content.addView(Sheet.row(this, l, v))
     private fun button(label: String, icon: Int?, kind: Kind = Kind.SECONDARY, enabled: Boolean = true, run: () -> Unit) =
-        content.addView(ActionButton(this).set(label, icon, kind).apply { isEnabled = enabled; setOnClickListener { run() } },
-            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(56)).apply { topMargin = dp(10) })
+        content.addView(ActionButton(this).set(label, icon, kind).apply {
+            fitLabel = false
+            this.label.maxLines = 2
+            minimumHeight = dp(56)
+            isEnabled = enabled
+            setOnClickListener { run() }
+        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(10) })
 
     private fun device() {
         val p = graph.provisioning.value
@@ -265,12 +278,12 @@ class SetupActivity : Activity() {
     private fun maps() {
         val p = graph.provisioning.value
         heading(getString(R.string.setup_section_maps))
-        body(getString(R.string.maps_online_note))
-        row(getString(R.string.maps_online_provider), graph.provisioning.value?.onlineMap?.name ?: "OpenStreetMap")
         heading(getString(R.string.maps_mode_title))
         for ((mode, label) in listOf(RegionPacks.Mode.AUTOMATIC to R.string.maps_mode_automatic, RegionPacks.Mode.ONLINE to R.string.maps_mode_online, RegionPacks.Mode.OFFLINE to R.string.maps_mode_offline)) {
             button(getString(label), R.drawable.ic_map, if (graph.maps.mode == mode) Kind.PRIMARY else Kind.SECONDARY) { graph.maps.mode = mode; render() }
         }
+        row(getString(R.string.maps_online_provider), p?.onlineMap?.name ?: "OpenStreetMap")
+        body(getString(R.string.maps_online_note))
         body(getString(R.string.maps_coverage_note), R.color.text3)
         body(getString(R.string.maps_body))
         body(progress ?: graph.maps.describe(), R.color.text)

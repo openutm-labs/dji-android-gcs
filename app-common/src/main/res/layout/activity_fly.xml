@@ -17,7 +17,7 @@
         <!-- The bar reserves the indicator group and measures these text statuses to fit. -->
         <FrameLayout android:id="@+id/statusLeading" android:layout_width="wrap_content" android:layout_height="match_parent" />
         <FrameLayout android:id="@+id/utmPillBox" android:layout_width="wrap_content" android:layout_height="match_parent"
-            android:paddingStart="8dp" />
+            android:paddingStart="8dp" android:paddingEnd="8dp" />
         <FrameLayout android:id="@+id/statusTrailing" android:layout_width="wrap_content" android:layout_height="match_parent" />
     </org.openutm.djiflight.app.ui.FlightStatusBar>
 

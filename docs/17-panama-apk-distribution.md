@@ -1,13 +1,13 @@
-# Panama APK distribution — 0.6.1
+# Panama APK distribution — 0.6.2
 
 These signed preview installers select Panama on first launch. They contain the public Flight Blender and Passport addresses, with no operator account, pilot identity, aircraft serial, OAuth client secret or access token bundled into the app.
 
 ## Choose the installer
 
-- **OpenUTM-Panama-v4-0.6.1.apk:** the DJI v4 app, including the Mini 2. Android 6 or later; ARM 32/64-bit.
-- **OpenUTM-Panama-v5-0.6.1.apk:** the DJI v5 app for compatible enterprise equipment. Android 7 or later; ARM64. The coordinator must confirm the aircraft/controller combination before use.
+- **OpenUTM-Panama-v4-0.6.2.apk:** the DJI v4 app, including the Mini 2. Android 6 or later; ARM 32/64-bit.
+- **OpenUTM-Panama-v5-0.6.2.apk:** the DJI v5 app for compatible enterprise equipment. Android 7 or later; ARM64. The coordinator must confirm the aircraft/controller combination before use.
 
-Use 0.6.1 for distribution. It includes default OpenStreetMap street maps, a readable scrolling aircraft-status panel, and the QR and camera-panel fixes. Install it over a release-signed 0.5.x APK to retain device data.
+Use 0.6.2 for distribution. It includes default OpenStreetMap street maps, a readable scrolling aircraft-status panel, clearer setup and planning layouts, and the QR and camera-panel fixes. Install it over a release-signed 0.5.x APK to retain device data.
 
 These are two separate apps. Install the one for the operator's equipment. They are not installers for every DJI controller. Do not include the simulator or the Android test APK in an operator download.
 
@@ -103,3 +103,6 @@ On the physical OnePlus, the v4 release updated 0.5.3 in place. The normal visib
 
 
 For **0.6.1/code 10**, both signed releases built and v4/v5 release lint passed. The change is in the v4 aircraft-status layout; v5 retains the same map functionality with a matching distribution version. On the OnePlus, the actual top-bar status entry opened the SDK checklist after the update. The list filled 1,894 physical pixels instead of 804, and Overall Status text occupied 63 pixels vertically instead of 26. Rows had a 48 dp minimum height, the list scrolled to the bottom, and Close restored the camera/map. Opening status while the map was primary expanded the camera host and kept the panel readable. No SDK action rows, calibration buttons, flight settings or flight controls were activated. These checks do not qualify aircraft operation or connected-aircraft status data.
+
+
+For **0.6.2/code 11**, both signed releases and shared/v4/v5 lint completed without errors. Shared map tests passed; unchanged core/adapter tests retain passing results (156 total). The signed v4 first-run smoke passed, including real QR launch/cancel and expansion of the native checklist from the camera inset. A map layout loop exposed by that test was repaired. Planning and setup layouts were inspected at normal and 150% text sizes; read-only OnePlus checks covered status, setup and the v5 disconnected/settings screens. APK signatures, versions and exclusion of private setup were verified. See the [UI audit](19-ui-ux-audit.md) for screenshots, the supplied Pilot 2 workflow comparison and remaining gaps. These checks do not qualify connected v5 equipment, automatic Mini 2 missions or survey results.

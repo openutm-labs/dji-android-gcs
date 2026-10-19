@@ -161,11 +161,13 @@ public class CameraConfigStorageWidgetModel extends WidgetModel implements ICame
     protected void inSetup() {
         bindDataProcessor(KeyTools.createKey(CameraKey.KeyCameraStorageInfos, cameraIndex), storageInfosProcessor, cameraStorageInfos -> {
             storageLocationProcessor.onNext(cameraStorageInfos.getCurrentStorageType());
+            // Capacity belongs to the selected medium, not whichever entry is processed last.
+            CameraStorageInfo selectedInfo = cameraStorageInfos.getCameraStorageInfoByLocation(cameraStorageInfos.getCurrentStorageType());
+            availableCapacity.onNext(selectedInfo == null ? INVALID_AVAILABLE_CAPACITY : selectedInfo.getStorageLeftCapacity());
 
             CameraStorageInfo internalInfo = cameraStorageInfos.getCameraStorageInfoByLocation(CameraStorageLocation.INTERNAL);
             if (internalInfo != null) {
                 innerStorageState.onNext(internalInfo.getStorageState());
-                availableCapacity.onNext(internalInfo.getStorageLeftCapacity());
                 innerStorageAvailableCaptureCount.onNext(internalInfo.getAvailablePhotoCount());
                 innerStorageRecordingTime.onNext(internalInfo.getAvailableVideoDuration());
             }
@@ -173,7 +175,6 @@ public class CameraConfigStorageWidgetModel extends WidgetModel implements ICame
             CameraStorageInfo sdcardInfo = cameraStorageInfos.getCameraStorageInfoByLocation(CameraStorageLocation.SDCARD);
             if (sdcardInfo != null) {
                 sdCardState.onNext(sdcardInfo.getStorageState());
-                availableCapacity.onNext(sdcardInfo.getStorageLeftCapacity());
                 sdAvailableCaptureCount.onNext(sdcardInfo.getAvailablePhotoCount());
                 sdCardRecordingTime.onNext(sdcardInfo.getAvailableVideoDuration());
             }

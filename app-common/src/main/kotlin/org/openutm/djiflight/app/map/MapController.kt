@@ -106,6 +106,15 @@ class MapController(
             } else reloadStyle()
         }
     }
+    /** A host's instruction banner can wrap; reserve its measured height instead of guessing. */
+    var statusTopClearancePx: Int? = null
+        set(value) {
+            if (field == value) return
+            field = value
+            val p = status.layoutParams as? FrameLayout.LayoutParams ?: return
+            val top = value ?: dp(58)
+            if (p.topMargin != top) status.layoutParams = p.apply { topMargin = top }
+        }
     private var loaded = false
     private var tileError = false
     private val connectivity = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -120,16 +129,18 @@ class MapController(
         view.addView(credits, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM or Gravity.END))
         view.addView(status, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.START))
         view.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-            credits.maxWidth = (view.width - dp(8)).coerceAtLeast(1)
-            status.maxWidth = (view.width - dp(8)).coerceAtLeast(1)
+            val labelWidth = (view.width - dp(8)).coerceAtLeast(1)
+            // TextView setters request another layout even when their value is unchanged.
+            if (credits.maxWidth != labelWidth) credits.maxWidth = labelWidth
+            if (status.maxWidth != labelWidth) status.maxWidth = labelWidth
             val small = view.height < dp(180)
             val bottom = dp(if (small) 4 else bottomClearanceDp)
-            val top = dp(if (small) 4 else 58)
+            val top = statusTopClearancePx ?: dp(if (small) 4 else 58)
             (credits.layoutParams as FrameLayout.LayoutParams).let { p ->
                 if (p.bottomMargin != bottom) credits.layoutParams = p.apply { bottomMargin = bottom; marginEnd = dp(4) }
             }
             (status.layoutParams as FrameLayout.LayoutParams).let { p ->
-                if (p.topMargin != top) status.layoutParams = p.apply { topMargin = top; marginStart = dp(4) }
+                if (p.topMargin != top || p.marginStart != dp(4)) status.layoutParams = p.apply { topMargin = top; marginStart = dp(4) }
             }
         }
         mapView.addOnTileActionListener { operation, _, _, _, _, _, source ->

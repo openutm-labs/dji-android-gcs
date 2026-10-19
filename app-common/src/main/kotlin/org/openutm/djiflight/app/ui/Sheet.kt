@@ -117,10 +117,10 @@ class Sheet(private val activity: Activity, wide: Boolean = false) {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(0, activity.dp(8), 0, activity.dp(8))
-            // The label keeps its words; a long value wraps instead.
-            addView(activity.text(15f, R.color.text2).apply { text = label; maxLines = 1 }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+            // Both columns wrap. An unbounded label can otherwise leave no width for its value.
+            addView(activity.text(15f, R.color.text2).apply { text = label }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 0.42f))
             addView(activity.text(16f, valueColor, bold = true).apply { text = value; gravity = Gravity.END },
-                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = activity.dp(16) })
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 0.58f).apply { marginStart = activity.dp(16) })
         }
 
         fun note(activity: Activity, s: String, colorId: Int = R.color.text3): TextView =

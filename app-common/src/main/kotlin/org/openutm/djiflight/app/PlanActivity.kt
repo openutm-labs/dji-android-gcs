@@ -242,6 +242,9 @@ class PlanActivity : Activity() {
     private fun buildMapTools() {
         mapHint = findViewById(R.id.mapHint)
         mapHint.background = rounded(color(R.color.scrim), dp(8).toFloat())
+        mapHint.addOnLayoutChangeListener { _, _, _, _, bottom, _, _, _, _ ->
+            map.statusTopClearancePx = if (mapHint.visibility == View.VISIBLE) bottom + dp(6) else dp(4)
+        }
         mapHint.setOnClickListener {
             if (!graph.maps.usesOnline() && !graph.maps.basemap.isFile && !graph.maps.imagery.isFile) {
                 startActivity(Intent(this, SetupActivity::class.java).putExtra("section", "maps"))
@@ -264,8 +267,8 @@ class PlanActivity : Activity() {
                 recompute(force = true)
             }
         }
-        tools.addView(undoButton, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(52)))
-        tools.addView(clearButton, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(52)).apply { marginStart = dp(8) })
+        tools.addView(undoButton, LinearLayout.LayoutParams(0, dp(52), 1f))
+        tools.addView(clearButton, LinearLayout.LayoutParams(0, dp(52), 1f).apply { marginStart = dp(8) })
         findViewById<ImageView>(R.id.btnRecenter).apply {
             background = rounded(color(R.color.scrim), dp(26).toFloat())
             imageTintList = android.content.res.ColorStateList.valueOf(color(R.color.text))
@@ -374,8 +377,9 @@ class PlanActivity : Activity() {
         val altRow = Stepper.row(this, getString(R.string.plan_altitude), getString(R.string.plan_altitude_hint), altitude)
         altitudeHint = altRow.findViewWithTag("hint")
         missionBox.addView(section(getString(R.string.plan_section_survey)))
-        missionBox.addView(altRow)
+        missionBox.addView(text(15f, bold = true).apply { text = getString(R.string.plan_mission_type); setPadding(0, 0, 0, dp(6)) })
         missionBox.addView(patternRow())
+        missionBox.addView(altRow)
         routeWidth = stepper(getString(R.string.plan_route_width), 60.0, 5.0, 500.0, 5.0) { getString(R.string.plan_value_m, it) }
         orbitTop = stepper(getString(R.string.plan_orbit_top), 80.0, 20.0, legal, 5.0) { getString(R.string.plan_value_m, it) }
         orbitLayer = stepper(getString(R.string.plan_orbit_layer), 20.0, 5.0, 100.0, 5.0) { getString(R.string.plan_value_m, it) }
@@ -589,8 +593,7 @@ class PlanActivity : Activity() {
 
     private fun patternRow(): View {
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        patternSpinner = Spinner(this).apply {
-            adapter = ArrayAdapter(this@PlanActivity, android.R.layout.simple_spinner_dropdown_item, SurveyPattern.entries.map(::patternLabel))
+        patternSpinner = spinner(SurveyPattern.entries.map(::patternLabel)).apply {
             onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onNothingSelected(parent: AdapterView<*>?) = Unit
                 override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
@@ -718,6 +721,9 @@ class PlanActivity : Activity() {
         if (!fitted && map.ready) (area ?: (survey.takeIf { it.size >= 2 }) ?: center?.let { listOf(it) })?.let { map.fit(it, dp(40), dp(64), dp(40), dp(80)); fitted = true }
 
         val mapMissing = !graph.maps.usesOnline() && !graph.maps.basemap.isFile && !graph.maps.imagery.isFile
+        // MapController supplies the single actionable missing-map message.
+        mapHint.show(!mapMissing)
+        if (mapMissing) map.statusTopClearancePx = dp(4)
         mapHint.isClickable = mapMissing
         mapHint.setIfChanged(
             when {
@@ -766,11 +772,14 @@ class PlanActivity : Activity() {
 
     private fun renderTexts(legal: Double) {
         val r = surveyResult
+        val confirmedCamera = graph.service.status.value.link is LinkState.Connected && graph.adapter.capabilities.value?.camera != null
+        val cameraLabel = if (confirmedCamera) camera().name else getString(R.string.plan_camera_unconfirmed, camera().name)
         importButton.label.text = getString(if (compactImport) R.string.plan_import_short else if (mission && pattern == SurveyPattern.CORRIDOR) R.string.plan_import_line else R.string.plan_import)
         altitudeHint.setIfChanged(
-            camera().name + " · " + (r?.let { if (pattern == SurveyPattern.PERIMETER) getString(R.string.plan_gsd_perimeter, it.gsdCm) else resources.getQuantityString(R.plurals.plan_gsd_lines, it.lineCount, it.gsdCm, it.lineCount) }
+            cameraLabel + " · " + (r?.let { if (pattern == SurveyPattern.PERIMETER) getString(R.string.plan_gsd_perimeter, it.gsdCm) else resources.getQuantityString(R.plurals.plan_gsd_lines, it.lineCount, it.gsdCm, it.lineCount) }
                 ?: getString(R.string.plan_gsd, gsdAt(altitude.current))),
         )
+        altitudeHint.setTextColor(color(if (confirmedCamera) R.color.text3 else R.color.warn))
         patternHint.setIfChanged(
             when (pattern) {
                 SurveyPattern.GRID -> getString(R.string.plan_pattern_grid_hint)
