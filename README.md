@@ -5,9 +5,12 @@ An Android ground control station (GCS) for DJI drones, connecting to OpenUTM, b
 - **Design and decisions:** [docs/12-dji-app-design.md](docs/12-dji-app-design.md)
 - **Background (DJI integration options):** [docs/11-dji-integration.md](docs/11-dji-integration.md)
 - **DroneDeploy: integration and pilot migration:** [docs/13-dronedeploy.md](docs/13-dronedeploy.md)
+- **Survey expansion and Mini 2 qualification:** [docs/15-survey-expansion-and-mini2.md](docs/15-survey-expansion-and-mini2.md)
 - **Bench and field test plan:** [docs/14-dji-field-test-plan.md](docs/14-dji-field-test-plan.md)
 
-**Status (2026-10-18, 0.4.0):** two apps, all screens built and redesigned (docs/12, The app); not yet flown with a real aircraft.
+**Development update (2026-10-19, 0.5.0):** five-direction, corridor and layered-surround planning; local saved plans; concave-area routing; network diagnostics; an explicitly opted-in debug-only Mini 2 Virtual Stick stop-and-shoot executor. All release builds keep Mini 2 automatic execution disabled pending hardware qualification. See [scope, limits and the remaining feature backlog](docs/15-survey-expansion-and-mini2.md). Broadcast Remote ID is excluded; this work targets Flight Blender network reporting.
+
+**Previous baseline (2026-10-18, 0.4.0):** two apps, all screens built and redesigned (docs/12, The app); not yet flown with a real aircraft.
 - **`app-v4`** (DJI MSDK v4.18): Phantom 4 Pro V2.0, Mavic 2 Pro, Air 2S, Mavic Air 2, Mini 2.
 - **`app-v5`** (DJI MSDK v5.18): Mavic 3 Enterprise, 3T and 3M; Matrice 400 with a P1, L2, H30 or H30T.
 - **Screens:** Fly, Plan (manual flights; Grid, Crosshatch and Perimeter surveys), Pre-flight (lab checklist, aircraft checks, settings, calibration, the take-off height choice), Flights (export), Setup (device setup, maps, terrain, zones, updates), pilot sign-in; shared by both apps. Laid out as DJI's apps are; landscape, full screen. Every string is an Android resource, ready for translation.

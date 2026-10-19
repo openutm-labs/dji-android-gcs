@@ -21,8 +21,8 @@ android {
         // MSDK v4.18: minSdk 23, targetSdk 34, 32- and 64-bit ARM. Not eligible for Google Play (4 KB pages).
         minSdk = 23
         targetSdk = 34
-        versionCode = 4
-        versionName = "0.4.0"
+        versionCode = 5
+        versionName = "0.5.0"
         multiDexEnabled = true
         buildConfigField("String", "DEV_BLENDER_URL", "\"$devBlenderUrl\"")
     }
@@ -61,8 +61,10 @@ android {
         // (right to left), to check every screen with translated-length text.
         debug {
             isPseudoLocalesEnabled = true
+            buildConfigField("boolean", "MINI2_SURVEY_EXPERIMENTAL", ((findProperty("openutm.experimentalMini2") as String?) == "true").toString())
         }
         release {
+            buildConfigField("boolean", "MINI2_SURVEY_EXPERIMENTAL", "false")
             isMinifyEnabled = true
             isShrinkResources = true
             // proguard-rules.pro carries DJI's own 4.18 keep rules (from its sample app) and ours.

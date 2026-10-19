@@ -96,6 +96,7 @@ class ReplayDroneAdapter(
             missionLimits = MissionLimits.WAYPOINT_V1,
             hasRtk = false,
             nativeRateHz = 10,
+            camera = org.openutm.djiflight.core.mission.CameraModel.P4P_V2,
         )
         _link.value = LinkState.Connected(identity)
     }

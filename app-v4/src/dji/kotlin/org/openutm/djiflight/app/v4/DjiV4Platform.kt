@@ -27,7 +27,7 @@ object DjiV4Platform : Platform {
     override val defaultMissionLimits = MissionLimits.WAYPOINT_V1
     override val defaultCamera = CameraModel.P4P_V2
 
-    override fun createAdapter(context: Context, scope: CoroutineScope): DroneAdapter = DjiV4Adapter(context) { Log.i("DjiV4Adapter", it) }
+    override fun createAdapter(context: Context, scope: CoroutineScope): DroneAdapter = DjiV4Adapter(context, enableMini2Survey = BuildConfig.DEBUG && BuildConfig.MINI2_SURVEY_EXPERIMENTAL) { Log.i("DjiV4Adapter", it) }
 
     override fun extraStatus(adapter: DroneAdapter): String? = "SDK ${(adapter as DjiV4Adapter).registration.value}"
 

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Developer bench only. Other installed apps cannot open this shell-protected screen. -->
+        <activity android:name="org.openutm.djiflight.app.v4.Mini2BenchActivity"
+            android:exported="true" android:permission="android.permission.DUMP" />
+    </application>
+</manifest>

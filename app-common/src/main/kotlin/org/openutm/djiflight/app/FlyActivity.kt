@@ -609,6 +609,7 @@ class FlyActivity : Activity() {
             graph.service.syncSoon()
             Toast.makeText(this, getString(R.string.fly_menu_uploading_toast), Toast.LENGTH_SHORT).show()
         }
+        item(getString(R.string.network_status_title), R.drawable.ic_sync) { showNetworkStatus() }
         item(getString(R.string.fly_menu_map_key), R.drawable.ic_map) { showMapKey() }
         list.addView(Sheet.note(this, getString(R.string.fly_menu_version, getString(R.string.app_name), graph.platform.versionName, graph.platform.extraStatus(graph.adapter) ?: graph.platform.label)))
         sheet = Sheet(this).title(getString(R.string.fly_menu_title)).body(list).button(getString(R.string.fly_close))
@@ -668,6 +669,18 @@ class FlyActivity : Activity() {
         Sheet(this).title(getString(R.string.fly_utm_title)).body(body).button(getString(R.string.fly_close)).button(getString(R.string.fly_upload_now), Kind.PRIMARY, R.drawable.ic_sync) { graph.service.syncSoon() }.show()
     }
 
+    private fun showNetworkStatus() {
+        val s = graph.service.status.value
+        val flight = s.activeFlight
+        val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        list.addView(Sheet.row(this, getString(R.string.network_status_connection), getString(if (s.online) R.string.network_status_online else R.string.network_status_offline)))
+        list.addView(Sheet.row(this, getString(R.string.network_status_aircraft), getString(if (s.link is LinkState.Connected && !s.telemetryStale && s.lastState != null) R.string.network_status_fresh else R.string.network_status_stale)))
+        list.addView(Sheet.row(this, getString(R.string.network_status_declaration), getString(if (flight?.declarationId != null) R.string.network_status_declared else R.string.network_status_not_declared)))
+        list.addView(Sheet.row(this, getString(R.string.network_status_pending), flight?.let { graph.service.pendingSamples(it.flightId).toString() } ?: "—"))
+        list.addView(Sheet.note(this, getString(R.string.network_status_note)))
+        Sheet(this).title(getString(R.string.network_status_title)).body(list).button(getString(R.string.fly_close)).show()
+    }
+
     /** Go: what the aircraft will do, the lab checklist, then slide to start (DJI's convention). */
     private fun askGo(m: MissionUi) {
         val f = graph.service.status.value.activeFlight ?: return
@@ -679,11 +692,20 @@ class FlyActivity : Activity() {
             else getString(R.string.fly_go_route_value, m.waypoints, km)))
         body.addView(Sheet.row(this, getString(R.string.fly_go_row_altitude), getString(R.string.fly_go_altitude_value, mission.waypoints.filter { !it.transit }.maxOfOrNull { it.heightM } ?: 0.0)))
         setup?.returnHomeHeightM?.let { body.addView(Sheet.row(this, getString(R.string.fly_go_row_rth_height), getString(R.string.fly_go_rth_height_value, it))) }
-        body.addView(Sheet.row(this, getString(R.string.fly_go_row_at_end), getString(R.string.fly_go_return_home)))
+        body.addView(Sheet.row(this, getString(R.string.fly_go_row_at_end),
+            if (m.part < m.parts) getString(R.string.fly_go_hover_next_upload) else when (mission.finishAction) {
+                org.openutm.djiflight.core.mission.FinishAction.GO_HOME -> getString(R.string.fly_go_return_home)
+                org.openutm.djiflight.core.mission.FinishAction.HOVER -> getString(R.string.fly_go_hover)
+                org.openutm.djiflight.core.mission.FinishAction.AUTO_LAND -> getString(R.string.fly_go_land)
+                org.openutm.djiflight.core.mission.FinishAction.GO_FIRST_WAYPOINT -> getString(R.string.fly_go_first_waypoint)
+            }))
         body.addView(Sheet.row(this, getString(R.string.fly_go_row_rc_lost), when (setup?.rcLostAction) {
             RcLostAction.HOVER -> getString(R.string.fly_go_rc_lost_hover); RcLostAction.LAND -> getString(R.string.fly_go_rc_lost_land)
             RcLostAction.RETURN_HOME -> getString(R.string.fly_go_return_home); null -> getString(R.string.fly_go_rc_lost_unknown)
         }, if (setup?.rcLostAction != null && setup.rcLostAction != RcLostAction.RETURN_HOME) R.color.warn else R.color.text))
+        if (graph.adapter.capabilities.value?.missionSupport == org.openutm.djiflight.core.adapter.MissionSupport.VIRTUAL_STICK_EXPERIMENTAL) {
+            body.addView(Sheet.note(this, getString(R.string.mini2_experimental_notice)))
+        }
         val checklistOk = graph.provisioning.value?.checklist.isNullOrEmpty() || f.checklist != null
         body.addView(Sheet.row(this, getString(R.string.fly_go_row_checklist), if (checklistOk) getString(R.string.fly_go_checklist_done) else getString(R.string.fly_go_checklist_not_done), if (checklistOk) R.color.text else R.color.warn))
         body.addView(Sheet.note(this, getString(R.string.fly_go_note)))

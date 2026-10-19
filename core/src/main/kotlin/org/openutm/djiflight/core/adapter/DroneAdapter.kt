@@ -53,7 +53,7 @@ data class AircraftIdentity(
     val firmware: String? = null,
 )
 
-enum class MissionSupport { NONE, WAYPOINT_V1, WAYPOINT_V2, WPML }
+enum class MissionSupport { NONE, WAYPOINT_V1, WAYPOINT_V2, WPML, VIRTUAL_STICK_EXPERIMENTAL }
 
 data class DroneCapabilities(
     val model: String,

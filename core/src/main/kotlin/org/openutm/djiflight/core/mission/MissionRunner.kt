@@ -202,6 +202,10 @@ class MissionRunner(
             parts[idx]
         }
         // Travel legs: in on the first part of a run (the start, or a resume), out on the last.
+        val expectedCamera = part.cameraName
+        if (expectedCamera != null && expectedCamera != adapter.capabilities.value?.camera?.name) {
+            return fail("survey camera changed or is unknown: reopen Plan and review the route for the connected camera")
+        }
         val expanded = TravelLegs.expand(part, aircraftPosition(), intro = idx == 0, outro = idx == parts.lastIndex)
         val problems = MissionValidator.validate(expanded.plan, limits, legalMaxHeightM())
         if (problems.isNotEmpty()) return fail(problems.first())
@@ -217,7 +221,7 @@ class MissionRunner(
     private fun split(from: Int) {
         val p = plan ?: return
         start = from
-        val rest = if (from == 0) p else p.copy(waypoints = p.waypoints.subList(from, p.waypoints.size))
+        val rest = if (from == 0) p else p.copy(waypoints = p.waypoints.subList(from, p.waypoints.size), gimbalPitchDeg = p.pitchAt(from))
         parts = MissionValidator.split(rest, limits)
         offsets = parts.runningFold(from) { acc, part -> acc + part.waypoints.size - 1 }.dropLast(1)
         partIdx = 0
