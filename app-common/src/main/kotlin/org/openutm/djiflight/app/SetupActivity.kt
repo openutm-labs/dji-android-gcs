@@ -138,7 +138,9 @@ class SetupActivity : Activity() {
             startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"), REQ_PROVISION_FILE)
         }
         tile(getString(R.string.setup_tile_scan), getString(R.string.setup_tile_scan_hint), R.drawable.ic_qr) {
-            IntentIntegrator(this).setDesiredBarcodeFormats(IntentIntegrator.QR_CODE).setPrompt(getString(R.string.setup_scan_prompt)).setBeepEnabled(false).setOrientationLocked(false).initiateScan()
+            IntentIntegrator(this).setCaptureActivity(ProvisioningQrActivity::class.java)
+                .setDesiredBarcodeFormats(IntentIntegrator.QR_CODE).setPrompt(getString(R.string.setup_scan_prompt))
+                .setBeepEnabled(false).setOrientationLocked(false).initiateScan()
         }
         tile(getString(R.string.setup_tile_paste), getString(R.string.setup_paste_hint), R.drawable.ic_paste) {
             val input = EditText(this).apply {

@@ -6,11 +6,13 @@ An Android ground control station (GCS) for DJI drones, connecting to OpenUTM, b
 - **Background (DJI integration options):** [docs/11-dji-integration.md](docs/11-dji-integration.md)
 - **DroneDeploy: integration and pilot migration:** [docs/13-dronedeploy.md](docs/13-dronedeploy.md)
 - **Survey expansion and Mini 2 qualification:** [docs/15-survey-expansion-and-mini2.md](docs/15-survey-expansion-and-mini2.md)
-- **Panama distribution installers (0.5.1):** [install, configure and share](docs/17-panama-apk-distribution.md)
+- **Panama distribution installers (0.5.2):** [install, configure and share](docs/17-panama-apk-distribution.md)
 - **Connect a phone to Panama:** [docs/16-connect-panama.md](docs/16-connect-panama.md)
 - **Bench and field test plan:** [docs/14-dji-field-test-plan.md](docs/14-dji-field-test-plan.md)
 
 **Panama distribution update (2026-10-19, 0.5.1):** signed release builds default to Panama in first-run setup, support private device credential entry with a protected-read check, and explain missing offline maps. Operator identities and OAuth secrets are supplied per device. Existing saved setups are preserved.
+
+**QR scanner fix (0.5.2):** provisioning uses app-owned outer and nested scanner layouts so DJI's incompatible `zxing_*` resources cannot replace JourneyApps views and crash on opening Scan QR code. The release smoke check now opens the real scan tile, checks all three view types and cancels back to setup.
 
 **Development update (2026-10-19, 0.5.0):** five-direction, corridor and layered-surround planning; local saved plans; concave-area routing; network diagnostics; an explicitly opted-in debug-only Mini 2 Virtual Stick stop-and-shoot executor. All release builds keep Mini 2 automatic execution disabled pending hardware qualification. See [scope, limits and the remaining feature backlog](docs/15-survey-expansion-and-mini2.md). Broadcast Remote ID is excluded; this work targets Flight Blender network reporting.
 

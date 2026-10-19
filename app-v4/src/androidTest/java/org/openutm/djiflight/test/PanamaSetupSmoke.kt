@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
+import android.view.KeyEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.TextView
 
@@ -44,7 +45,32 @@ class PanamaSetupSmoke : Instrumentation() {
                 }
                 bitmap.recycle()
             }
-            result.putString("checks", "Panama default; empty personal identity; setup form opens; masked secret; missing pilot rejected before connection")
+            sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+            waitForIdleSync()
+            uiAutomation.grantRuntimePermission(targetContext.packageName, android.Manifest.permission.CAMERA)
+            val scannerMonitor = addMonitor("org.openutm.djiflight.app.ProvisioningQrActivity", null, false)
+            runOnMainSync {
+                var scan: View = views(activity.window.decorView).filterIsInstance<TextView>()
+                    .first { it.text.toString() == "Scan QR code" }
+                while (!scan.isClickable) scan = scan.parent as View
+                check(scan.performClick()) { "scan button did not open" }
+            }
+            val scanner = waitForMonitorWithTimeout(scannerMonitor, 8_000) ?: error("QR scanner did not start")
+            waitForIdleSync()
+            runOnMainSync {
+                // Both outer and nested views must be JourneyApps views, never DJI's same-named layouts.
+                val classes = views(scanner.window.decorView).map { it.javaClass.name }
+                for (view in listOf("DecoratedBarcodeView", "BarcodeView", "ViewfinderView")) {
+                    check("com.journeyapps.barcodescanner.$view" in classes) { "QR view absent or replaced: $view" }
+                }
+                check(classes.none { it.startsWith("com.dji.scan.qr.") }) { "DJI scanner layout collision" }
+            }
+            sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+            waitForIdleSync()
+            check(scanner.isFinishing || scanner.isDestroyed) { "QR cancellation did not close scanner" }
+            waitFor("Scan QR code")
+            removeMonitor(scannerMonitor)
+            result.putString("checks", "Panama default; empty personal identity; setup form opens; masked secret; missing pilot rejected before connection; actual QR tile launches JourneyApps outer and nested views; cancel returns to setup")
             result.putString("result", "PASS")
             finish(Activity.RESULT_OK, result)
         } catch (e: Throwable) {

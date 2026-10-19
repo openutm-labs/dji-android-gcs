@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Both layout names must be unique: DJI also replaces ZXing's nested scanner layout. -->
+<com.journeyapps.barcodescanner.DecoratedBarcodeView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/openutm_qr_scanner"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:zxing_scanner_layout="@layout/openutm_qr_scanner"
+    app:zxing_preview_scaling_strategy="centerCrop"
+    app:zxing_use_texture_view="false" />

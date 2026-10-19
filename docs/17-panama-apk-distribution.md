@@ -1,11 +1,13 @@
-# Panama APK distribution — 0.5.1
+# Panama APK distribution — 0.5.2
 
 These signed preview installers select Panama on first launch. They contain the public Flight Blender and Passport addresses, with no operator account, pilot identity, aircraft serial, OAuth client secret or access token bundled into the app.
 
 ## Choose the installer
 
-- **OpenUTM-Panama-v4-0.5.1.apk:** the DJI v4 app, including the Mini 2. Android 6 or later; ARM 32/64-bit.
-- **OpenUTM-Panama-v5-0.5.1.apk:** the DJI v5 app for compatible enterprise equipment. Android 7 or later; ARM64. The coordinator must confirm the aircraft/controller combination before use.
+- **OpenUTM-Panama-v4-0.5.2.apk:** the DJI v4 app, including the Mini 2. Android 6 or later; ARM 32/64-bit.
+- **OpenUTM-Panama-v5-0.5.2.apk:** the DJI v5 app for compatible enterprise equipment. Android 7 or later; ARM64. The coordinator must confirm the aircraft/controller combination before use.
+
+Use 0.5.2 instead of 0.5.1: it fixes a crash opening **Scan QR code** caused by a scanner layout collision with the DJI SDK. Install it over the release-signed 0.5.1 APK to retain device data.
 
 These are two separate apps. Install the one for the operator's equipment. They are not installers for every DJI controller. Do not include the simulator or the Android test APK in an operator download.
 
@@ -80,6 +82,8 @@ The v4 release first-run smoke test uses a fresh, isolated Android emulator and 
 adb -s <test-emulator> shell am instrument -w org.openutm.djiflight.v4.test/org.openutm.djiflight.test.PanamaSetupSmoke
 ```
 
-Validation for the 19 October 2026 package: 148 JVM tests passed (136 core, 12 adapter), both signed aircraft releases and the simulator debug build compiled, and shared debug/v4 release/v5 release lint completed without errors. The v4 release first-run instrumentation passed on an isolated Android 14 emulator; v5 release installation and first launch also showed the Panama setup screen. Both release signatures and packaged version metadata were checked, and packaged content was checked for the owner's private credentials and identity. No production declarations, telemetry or aircraft-control commands were issued during these release checks. No v5 aircraft was qualified.
+Validation for the original 0.5.1 package: 148 JVM tests passed (136 core, 12 adapter), both signed aircraft releases and the simulator debug build compiled, and shared debug/v4 release/v5 release lint completed without errors. The v4 release first-run instrumentation passed on an isolated Android 14 emulator; v5 release installation and first launch also showed the Panama setup screen. Both release signatures and packaged version metadata were checked, and packaged content was checked for the owner's private credentials and identity. That smoke test did not open the QR scanner and missed the layout collision reported on the OnePlus. No production declarations, telemetry or aircraft-control commands were issued during these release checks. No v5 aircraft was qualified.
+
+For 0.5.2/code 7, both signed aircraft releases were rebuilt and shared debug/v4 release/v5 release lint passed. The expanded v4 release instrumentation passed on an isolated Android 14 emulator: it taps the real Scan QR code tile, verifies the JourneyApps outer scanner, barcode and viewfinder classes, and cancels back to setup, in addition to the previous onboarding checks. The v5 signed release was installed on the emulator; opening the scanner, denying camera permission, dismissing the camera message, retrying with permission and cancelling were checked without an app crash. Signatures, version metadata, checksums and absence of the owner's private credentials/identity were checked again. The new resource names isolate both scanner layouts without replacing DJI's layouts or adding blanket keep rules.
 
 The v5 build retains vendor warnings about optional Java KML helpers referencing `org.dom4j`; these helpers are not directly called by this app. Build success and emulator startup do not qualify all vendor SDK paths or equipment combinations.
