@@ -384,7 +384,7 @@ How the reference is chosen:
 ### Auth and provisioning
 - **Setup payload** (`DeviceProvisioning`, versioned JSON):
   - `device_name`, `blender_url`, `auth`, `lab`, `operator_id`, `country`, `legal_max_height_m`;
-  - `pilots` (id and display name only, until the data sharing agreement covers more) and `aircraft` (serial, registration, model);
+  - `pilots` (id and display name; optional `license` and `contact` only when the data sharing agreement permits them) and `aircraft` (serial, registration, model);
   - `basemap_url`, `imagery_url`, `update_url`.
   - `auth` is `client_credentials` (`token_url`, `client_id`, `client_secret`, `scope`, `audience`), or `dev`, which debug builds only accept.
 - **Delivery:** as a QR code, `openutm-device:1:` + base64url(gzip(JSON)), about 400 characters for two pilots and one aircraft. Or as the plain JSON in a file or pasted text, for the Smart Controller, which has no camera.
@@ -512,7 +512,7 @@ Follow-up connected checks confirmed the full battery indicator, warning clearan
 | Not built yet | Corridor, facade and orbit missions, combined crosshatch + perimeter in one mission (one gimbal angle per mission today), translations themselves (every string is a resource; no language added: they need translators from the labs) |
 | Device GNSS ellipsoid vs MSL vendor bugs | `GnssDatumCheck` flags a controller whose reading matches sea level where the geoid is far enough from the ellipsoid (with a terrain file). Still to see on real controllers ([14](14-dji-field-test-plan.md), 2.1) |
 | Importing completed flights | Flight Blender feature request drafted; not filed |
-| Pilot data | Data sharing agreement before rosters hold licence numbers or contacts. Pilot sign-in keeps no email in flight records |
+| Pilot data | Data sharing agreement before rosters hold licence numbers or contacts. Sign-in does not populate archive contacts automatically; only explicit provisioned contacts are archived |
 | Pilot sign-in on a lab's Passport | Per-lab accounts and the programme's decision on instances (H5); a public application per app with the loopback redirect URI; a check that the deployment's Passport requires PKCE |
 | Terrain following on aircraft | Built and unit-tested (2026-10-18); DJI's WPML validator accepts a followed survey and an upload part whose RTH height is above its own waypoints (emulator). Not flown. In DJI's simulator, props off: that the aircraft holds each waypoint's height on Waypoint 1.0 and WPML; what an added waypoint costs, since every waypoint is a stop (Waypoint 1.0's normal path, WPML `toPointAndStopWithDiscontinuityCurvature`), and if it is a lot, fly through the added ones (WPML `toPointAndPassWithContinuityCurvature`, v4's curved path); whether v4 restarts its photo distance at every waypoint (an extra photo per added one); the RTH height on v5. In the field, compare the height above ground with the aircraft's own ([14](14-dji-field-test-plan.md), 3.2) |
 | What terrain following doesn't cover | Heights count from the **planned** take-off point's ground: taking off elsewhere shifts the whole route by the difference (re-referencing the heights at upload from the aircraft's home point is not built). The legs from take-off to the first waypoint and RTH's straight line home are neither followed nor checked; a travel altitude must be above the route's top and within the legal limit at take-off, which a route up a hill often can't be. A drop steeper than the 2 m/s descent leaves the route higher above the ground than wanted between waypoints: the Plan screen warns, but doesn't block, above the legal height above ground |
@@ -548,3 +548,7 @@ From the OpenUTM Flying Labs launch review (2026-10), which checked the existing
 - **H2:** the connector's telemetry record lacks height, ground/airborne status and pilot location.
 - **H3:** no store-and-forward, and no way to upload a flight afterwards (Blender refuses declarations in the past).
 - **H5:** a shared Blender instance has no isolation between labs.
+
+## Durable session archive
+
+The [shared archive contract](SESSION_ARCHIVE.md) supersedes live-only backfill as evidence of historical storage. Live and archive cursors are independent. A server-closed operation remains pending until the archive receives a complete final-count receipt, including after app restart or receipt-window expiry.

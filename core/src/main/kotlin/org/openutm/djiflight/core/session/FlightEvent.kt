@@ -65,6 +65,10 @@ sealed class FlightEvent {
     @Serializable @SerialName("server_closed")
     data class ServerClosed(override val at: Long, val state: OperationState) : FlightEvent()
 
+    /** Server verified the complete contiguous archive, independent of live telemetry. */
+    @Serializable @SerialName("archive_completed")
+    data class ArchiveCompleted(override val at: Long, val sampleCount: Long) : FlightEvent()
+
     /** The pilot ticked every item of the lab's pre-flight checklist (from the device setup). */
     @Serializable @SerialName("checklist_completed")
     data class ChecklistCompleted(override val at: Long, val items: List<String>, val pilotId: String? = null) : FlightEvent()

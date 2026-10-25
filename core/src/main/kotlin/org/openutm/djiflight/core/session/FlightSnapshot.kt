@@ -26,6 +26,7 @@ data class FlightSnapshot(
     val finishRequested: Boolean = false,
     val cancelRequested: Boolean = false,
     val serverClosed: Boolean = false,
+    val archiveComplete: Boolean = false,
     val windowExpired: FlightEvent.WindowExpired? = null,
     val checklist: FlightEvent.ChecklistCompleted? = null,
     val imageryHandoff: FlightEvent.ImageryHandedOff? = null,
@@ -34,8 +35,8 @@ data class FlightSnapshot(
     val phase: Phase
         get() = when {
             cancelRequested && !everFlown -> Phase.CANCELLED
+            windowExpired != null && !archiveComplete -> Phase.EXPIRED_UNSYNCED
             serverClosed -> Phase.CLOSED
-            windowExpired != null -> Phase.EXPIRED_UNSYNCED
             declarationId == null && everFlown -> Phase.UNDECLARED
             airborne -> Phase.ACTIVE
             everFlown -> Phase.LANDED
@@ -71,6 +72,7 @@ data class FlightSnapshot(
             is FlightEvent.FinishRequested -> copy(finishRequested = true)
             is FlightEvent.CancelRequested -> copy(cancelRequested = true)
             is FlightEvent.ServerClosed -> copy(serverClosed = true)
+            is FlightEvent.ArchiveCompleted -> copy(archiveComplete = true)
             is FlightEvent.WindowExpired -> copy(windowExpired = e)
             is FlightEvent.ChecklistCompleted -> copy(checklist = e)
             is FlightEvent.ImageryHandedOff -> copy(imageryHandoff = e)

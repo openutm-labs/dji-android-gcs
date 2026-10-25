@@ -150,8 +150,10 @@ class FlightService(
         adapter.start()
     }
 
-    /** Flights not yet finished on the server (what a background sync job waits for). */
+    /** Flights whose operation or durable archive still needs synchronization. */
     fun pendingFlights(): Int = pendingCount()
+
+    fun requiresArchive(): Boolean = sync.supportsArchive
 
     fun stop() {
         adapter.stop()
@@ -231,7 +233,7 @@ class FlightService(
         var activeOutcome: SyncOutcome? = null
         for (f in flights) {
             val snap = f.actor.current()
-            if (snap.serverClosed || snap.plan == null) continue
+            if (snap.plan == null || (snap.serverClosed && (!sync.supportsArchive || snap.archiveComplete))) continue
             val outcome = sync.syncOnce(snap, f.journal, f.recorder.lastRecordedSeq, f.actor::record)
             out += outcome
             if (currentActive() === f) activeOutcome = outcome
@@ -248,7 +250,7 @@ class FlightService(
     fun samples(flightId: String): List<org.openutm.djiflight.core.model.TelemetrySample> = find(flightId)?.journal?.readSamples() ?: emptyList()
 
     /** Samples recorded but not yet accepted by Blender. */
-    fun pendingSamples(flightId: String): Long = find(flightId)?.let { (it.recorder.lastRecordedSeq - it.journal.cursor).coerceAtLeast(0) } ?: 0
+    fun pendingSamples(flightId: String): Long = find(flightId)?.let { (it.recorder.lastRecordedSeq - (if (sync.supportsArchive) it.journal.archiveCursor else it.journal.cursor)).coerceAtLeast(0) } ?: 0
 
     fun isExported(flightId: String): Boolean = find(flightId)?.journal?.exported ?: false
 
@@ -271,7 +273,7 @@ class FlightService(
     /** Removes exported, finished flights whose last event is older than [maxAgeMs]. */
     fun prune(maxAgeMs: Long = 90L * 86_400_000L): Int {
         val cutoff = clock.nowMs() - maxAgeMs
-        return flights.filter { it.journal.exported && it.actor.snapshot.value.lastEventAt < cutoff }.count { delete(it.journal.flightId) }
+        return flights.filter { it.journal.exported && (!sync.supportsArchive || it.actor.snapshot.value.archiveComplete) && it.actor.snapshot.value.lastEventAt < cutoff }.count { delete(it.journal.flightId) }
     }
 
     private fun currentActive(): Flight? = active?.takeIf { it.journal.serverId == repo.currentServerId() }
@@ -336,7 +338,7 @@ class FlightService(
             val online = _status.value.online
             val outcomes = if (online) syncAll() else emptyList()
             val live = flights.any { it.actor.snapshot.value.phase.let { p -> p == Phase.ACTIVE || p == Phase.LANDED } }
-            val waiting = outcomes.any { it.status == SyncStatus.BACKOFF } || (!online && pendingCount() > 0)
+            val waiting = outcomes.any { it.status == SyncStatus.BACKOFF || it.status == SyncStatus.UP_TO_DATE } || (!online && pendingCount() > 0)
             val wait = when {
                 live && online -> config.liveSyncIntervalMs
                 waiting -> outcomes.mapNotNull { it.retryAtMs }.minOrNull()?.let { (it - clock.nowMs()).coerceIn(500, config.idleSyncIntervalMs) }
@@ -349,6 +351,6 @@ class FlightService(
 
     private fun pendingCount() = flights.count {
         val s = it.actor.snapshot.value
-        s.plan != null && !s.serverClosed && s.windowExpired == null && s.declareRejected == null
+        s.plan != null && s.declareRejected == null && (!s.serverClosed || (sync.supportsArchive && !s.archiveComplete))
     }
 }

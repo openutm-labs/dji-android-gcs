@@ -1038,9 +1038,10 @@ class PlanActivity : Activity() {
             flightId = UUID.randomUUID().toString(), kind = if (mission) OperationKind.MISSION else OperationKind.MANUAL, area = Geo.closeRing(a), ground = g,
             plannedMaxHeightM = maxHeight(p.legalMaxHeightM), legalMaxHeightM = p.legalMaxHeightM, missionMaxHeightM = r?.plan?.maxHeightM,
             plannedStartMs = startMs, plannedEndMs = startMs + (hours.current * 3_600_000).toLong(), aircraftSerial = ac.serial, registrationId = ac.registration,
+            pilot = session?.let { p.rosterEntry(it) } ?: pilots.firstOrNull { it.id == pilotId },
             pilotId = pilotId, lab = p.lab, operatorId = p.operatorId, description = "${p.lab} ${if (mission) "mapping mission" else "manual VLOS flight"}${siteNameText?.let { " at $it" } ?: ""}",
             siteName = siteNameText, mission = r?.plan, surveyArea = if (mission) survey.toList() else null,
-            // The flight record keeps no email: the roster's name, else the identity server's id.
+            // Sign-in does not populate contacts; only explicitly provisioned pilot metadata is retained.
             pilotSignIn = session?.let { s -> s.copy(email = null, name = p.rosterEntry(s)?.name ?: s.name.takeUnless { n -> n == s.email } ?: s.subject) },
         )
         val current = graph.service.status.value.activeFlight

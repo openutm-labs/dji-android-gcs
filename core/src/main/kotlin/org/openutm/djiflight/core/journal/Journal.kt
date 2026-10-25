@@ -124,6 +124,28 @@ class FlightJournal(val dir: File, private val json: Json = JournalJson) {
     /** A reader that remembers how far it got, so each sync reads only new lines. */
     fun sampleReader() = SampleReader(samples, json)
 
+    /** Independent archive progress and exact pending payload survive process death. */
+    var archiveCursor: Long
+        get() = File(dir, "archive-cursor").takeIf { it.exists() }?.readText()?.trim()?.toLongOrNull() ?: -1
+        set(value) = saveArchiveFile("archive-cursor", value.toString())
+    var archiveSession: kotlinx.serialization.json.JsonObject?
+        get() = readArchiveFile("archive-session")
+        set(value) = saveArchiveFile("archive-session", value?.toString())
+    var archivePending: kotlinx.serialization.json.JsonObject?
+        get() = readArchiveFile("archive-pending")
+        set(value) = saveArchiveFile("archive-pending", value?.toString())
+
+    private fun readArchiveFile(name: String): kotlinx.serialization.json.JsonObject? =
+        File(dir, name).takeIf { it.exists() }?.readText()?.let { Json.parseToJsonElement(it) as kotlinx.serialization.json.JsonObject }
+
+    private fun saveArchiveFile(name: String, value: String?) {
+        val file = File(dir, name)
+        if (value == null) { check(!file.exists() || file.delete()) { "could not remove $file" }; return }
+        val tmp = File(dir, "$name.tmp")
+        FileOutputStream(tmp).use { out -> out.write(value.toByteArray(Charsets.UTF_8)); out.fd.sync() }
+        check(tmp.renameTo(file)) { "could not replace $file" }
+    }
+
     /** Last sample seq Blender accepted; -1 before the first upload. */
     var cursor: Long
         get() = cursorFile.takeIf { it.exists() }?.readText()?.trim()?.toLongOrNull() ?: -1

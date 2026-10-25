@@ -13,7 +13,7 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 @Serializable
-data class Pilot(val id: String, val name: String)
+data class Pilot(val id: String, val name: String, val license: String? = null, val contact: String? = null)
 
 @Serializable
 data class LabAircraft(val serial: String, val registration: String, val model: String = "")

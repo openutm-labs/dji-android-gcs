@@ -52,6 +52,27 @@ class BlenderBackend(
     private val submittedBy: String,
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) : UtmBackend {
+    override val supportsArchive: Boolean = true
+
+    override suspend fun sendArchive(batch: JsonObject): BackendResult<org.openutm.djiflight.core.sync.ArchiveReceipt> {
+        val id = batch.getValue("session").jsonObject.getValue("id").jsonPrimitive.content
+        val response = when (val r = call("PUT", "/adapter_ops/sessions/$id", batch)) {
+            is Raw.Fail -> return r.result
+            is Raw.Resp -> r
+        }
+        if (response.status != 200) return classify(response.status, response.body)
+        return runCatching {
+            val body = Json.parseToJsonElement(response.body).jsonObject
+            require(body.getValue("id").jsonPrimitive.content == id)
+            val archive = body.getValue("archive").jsonObject
+            org.openutm.djiflight.core.sync.ArchiveReceipt(
+                archive.getValue("complete").jsonPrimitive.content.toBooleanStrict(),
+                archive.getValue("receivedSampleCount").jsonPrimitive.content.toLong(),
+                archive["finalSampleCount"]?.jsonPrimitive?.contentOrNull?.toLongOrNull(),
+            )
+        }.fold({ BackendResult.Ok(it) }, { BackendResult.Transient("Invalid archive acknowledgement: ${it.message}") })
+    }
+
     override val serverId = org.openutm.djiflight.core.sync.ServerIdentity.of(baseUrl)
     private val base = baseUrl.trimEnd('/')
 

@@ -36,7 +36,7 @@ enum class SyncStatus {
     /** Needs a person or an upstream change (declare rejected, window expired, auth refused). */
     BLOCKED,
 
-    /** Flight closed on the server; nothing more to send. */
+    /** Flight closed and all supported delivery channels acknowledged completion. */
     DONE,
 }
 
@@ -45,7 +45,7 @@ data class SyncOutcome(val status: SyncStatus, val uploadedSamples: Int = 0, val
 /**
  * Store-and-forward for one flight at a time (docs/12, Sync engine).
  *
- * The engine owns only the upload cursor. Every other result is handed to [record], which goes
+ * The engine owns the independent live and archive upload cursors. Every other result is handed to [record], which goes
  * to the flight's single writer; it never saves a flight snapshot (the cause of launch-risks H1).
  * Samples are never dropped: they stay in the journal until Blender accepts them.
  */
@@ -55,6 +55,9 @@ class SyncEngine(
     private val config: SyncConfig = SyncConfig(),
 ) {
     private class Backoff(var delayMs: Long = 0, var nextAtMs: Long = 0)
+
+    val supportsArchive: Boolean get() = backend.snapshot().supportsArchive
+    private val archive = ArchiveUploader()
 
     private val backoff = HashMap<String, Backoff>()
     private val readers = HashMap<String, SampleReader>()
@@ -73,7 +76,16 @@ class SyncEngine(
         val b = backoff.getOrPut(snapshot.flightId) { Backoff() }
         if (now < b.nextAtMs) return SyncOutcome(SyncStatus.BACKOFF, retryAtMs = b.nextAtMs)
         val outcome = try {
-            step(snapshot, journal, lastRecordedSeq, record, now, destination)
+            val live = step(snapshot, journal, lastRecordedSeq, record, now, destination)
+            val current = FlightSnapshot.fold(snapshot.flightId, journal.readEvents())
+            if (destination.supportsArchive && current.declarationId != null) {
+                val archived = archive.sync(current, journal, lastRecordedSeq, destination, config.maxBatchesPerPass, record, now)
+                when {
+                    archived.status == SyncStatus.BLOCKED || archived.status == SyncStatus.BACKOFF -> archived
+                    current.serverClosed -> archived
+                    else -> live
+                }
+            } else live
         } catch (e: IllegalArgumentException) {
             SyncOutcome(SyncStatus.BLOCKED, message = e.message)
         }
@@ -97,7 +109,9 @@ class SyncEngine(
     ): SyncOutcome {
         var s = start
         val plan = s.plan ?: return SyncOutcome(SyncStatus.IDLE)
-        if (s.serverClosed) return SyncOutcome(SyncStatus.DONE)
+        if (s.serverClosed) return if (s.windowExpired != null && !s.archiveComplete && !backend.supportsArchive)
+            SyncOutcome(SyncStatus.BLOCKED, message = "Flight ended with unarchived samples retained on this device")
+        else SyncOutcome(SyncStatus.DONE)
 
         // 1. Declare (or find the declaration an unanswered attempt may have created).
         if (s.declarationId == null) {
@@ -193,7 +207,10 @@ class SyncEngine(
         if ((s.finishRequested || windowOver) && (backlogEmpty || s.windowExpired != null)) {
             val state = if (s.everFlown) OperationState.ENDED else OperationState.WITHDRAWN
             return when (val r = backend.setState(id, state)) {
-                is BackendResult.Ok -> { record(FlightEvent.ServerClosed(clock.nowMs(), state)); SyncOutcome(SyncStatus.DONE, uploaded) }
+                is BackendResult.Ok -> {
+                    record(FlightEvent.ServerClosed(clock.nowMs(), state))
+                    SyncOutcome(if (s.windowExpired != null && !backend.supportsArchive) SyncStatus.BLOCKED else SyncStatus.DONE, uploaded)
+                }
                 else -> failure(r, uploaded)
             }
         }

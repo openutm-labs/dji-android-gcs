@@ -409,6 +409,7 @@ class FlyActivity : Activity() {
         if (f?.plan == null) return getString(R.string.fly_utm_no_flight) to Pill.Tone.NEUTRAL
         val pending = graph.service.pendingSamples(f.flightId)
         val now = graph.clock.nowMs()
+        if (f.serverClosed && graph.service.requiresArchive() && !f.archiveComplete) return getString(R.string.flights_status_uploading) to Pill.Tone.WARN
         return when (f.phase) {
             Phase.PLANNED -> if (f.declareRejected != null) getString(R.string.fly_utm_refused) to Pill.Tone.CRIT
                 else if (!s.online) getString(R.string.fly_utm_not_declared_offline) to Pill.Tone.WARN else getString(R.string.fly_utm_declaring) to Pill.Tone.WARN

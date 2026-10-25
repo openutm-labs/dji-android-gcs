@@ -1,6 +1,7 @@
 package org.openutm.djiflight.core
 
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.*
 import org.junit.jupiter.api.io.TempDir
 import org.openutm.djiflight.core.altitude.AltitudeCandidate
 import org.openutm.djiflight.core.altitude.Egm96Grid
@@ -27,6 +28,24 @@ import kotlin.test.assertTrue
 /** A scripted Blender: records what it received and fails on demand. */
 class FakeBackend(private val clock: ManualClock) : UtmBackend {
     var online = true
+    var archiveEnabled = false
+    override val supportsArchive: Boolean get() = archiveEnabled
+    var loseArchiveResponse = false
+    var incompleteArchiveReceipt = false
+    val archived = linkedMapOf<Long, kotlinx.serialization.json.JsonElement>()
+    val archiveRequests = arrayListOf<kotlinx.serialization.json.JsonObject>()
+    override suspend fun sendArchive(batch: kotlinx.serialization.json.JsonObject): BackendResult<org.openutm.djiflight.core.sync.ArchiveReceipt> {
+        if (!online) return offline()
+        archiveRequests += batch
+        for (sample in batch.getValue("samples").jsonArray) {
+            val seq = sample.jsonObject.getValue("sequence").jsonPrimitive.long
+            check(archived[seq] == null || archived[seq] == sample) { "retry changed a sample" }
+            archived[seq] = sample
+        }
+        if (loseArchiveResponse) { loseArchiveResponse = false; return BackendResult.Transient("response lost after commit") }
+        val final = batch.getValue("session").jsonObject["finalSampleCount"]?.jsonPrimitive?.longOrNull
+        return BackendResult.Ok(org.openutm.djiflight.core.sync.ArchiveReceipt(!incompleteArchiveReceipt && final != null && archived.size.toLong() == final, archived.size.toLong(), final))
+    }
     var declareTimesOutAfterCreating = false
     val declarations = LinkedHashMap<String, DeclarationPlan>()
     val states = ArrayList<Pair<String, OperationState>>()
@@ -159,8 +178,8 @@ class SyncEngineTest {
         r.clock.advance(7 * 3_600_000L) // past planned end + 6 h grace
         r.backend.online = true
         val out = r.pass()
-        assertEquals(SyncStatus.DONE, out.status) // Ended on the server, but…
-        assertEquals(Phase.CLOSED, r.rec.snapshot.phase)
+        assertEquals(SyncStatus.BLOCKED, out.status) // Ended, but no archive support.
+        assertEquals(Phase.EXPIRED_UNSYNCED, r.rec.snapshot.phase)
         assertTrue(r.rec.snapshot.windowExpired != null) // …the samples are flagged, still in the journal
         assertTrue(r.backend.received.isEmpty())
         assertTrue(r.journal.readSamples().size >= 60)
@@ -175,6 +194,100 @@ class SyncEngineTest {
         assertEquals(SyncStatus.DONE, r.pass().status)
         assertEquals(listOf(OperationState.CANCELLED), r.backend.states.map { it.second })
         assertEquals(Phase.CANCELLED, r.rec.snapshot.phase)
+    }
+
+
+    @Test
+    fun `expired live window still archives every sample and completes`() = runTest {
+        val r = Rig()
+        r.backend.archiveEnabled = true
+        r.rec.record(FlightEvent.Planned(t0, TestData.plan(t0, flightId = r.journal.flightId, startInMs = 0, durationMs = 60_000)))
+        r.pass()
+        r.backend.online = false
+        r.fly(220)
+        r.rec.record(FlightEvent.FinishRequested(r.clock.now))
+        r.clock.advance(8 * 3_600_000L)
+        r.backend.online = true
+        assertEquals(SyncStatus.DONE, r.pass().status)
+        assertTrue(r.backend.received.isEmpty())
+        assertEquals(r.journal.readSamples().map { it.seq }, r.backend.archived.keys.toList())
+        assertEquals(r.rec.lastRecordedSeq, r.journal.archiveCursor)
+        assertEquals(-1, r.journal.cursor)
+        assertTrue(r.rec.snapshot.archiveComplete)
+        assertEquals(Phase.CLOSED, r.rec.snapshot.phase)
+        assertTrue(r.backend.archiveRequests.all { it.getValue("samples").jsonArray.size <= 200 })
+    }
+
+    @Test
+    fun `lost archive response replays exact outbox after restart and then closes`() = runTest {
+        val r = Rig()
+        r.backend.archiveEnabled = true
+        r.rec.record(FlightEvent.Planned(t0, TestData.plan(t0, flightId = r.journal.flightId, startInMs = 0)))
+        r.pass()
+        r.fly(220)
+        r.backend.loseArchiveResponse = true
+        assertEquals(SyncStatus.BACKOFF, r.pass().status)
+        val pending = r.journal.archivePending!!
+        r.rec.record(FlightEvent.FinishRequested(r.clock.now))
+        val reopened = org.openutm.djiflight.core.journal.FlightJournal(r.journal.dir)
+        val recorder = FlightRecorder(reopened, grid)
+        val engine = SyncEngine(r.backend, r.clock)
+        assertEquals(pending, reopened.archivePending)
+        assertEquals(SyncStatus.DONE, engine.syncOnce(recorder.snapshot, reopened, recorder.lastRecordedSeq) { e -> recorder.record(e); recorder.snapshot }.status)
+        val retries = r.backend.archiveRequests.count { it == pending }
+        assertEquals(2, retries)
+        assertEquals(r.journal.readSamples().size, r.backend.archived.size)
+        assertEquals(null, reopened.archivePending)
+        assertTrue(FlightRecorder(reopened, grid).snapshot.archiveComplete)
+    }
+
+    @Test
+    fun `cancelled empty flight archives a verified zero count`() = runTest {
+        val r = Rig()
+        r.backend.archiveEnabled = true
+        r.rec.record(FlightEvent.Planned(t0, TestData.plan(t0, flightId = r.journal.flightId, startInMs = 0)))
+        r.pass()
+        r.rec.record(FlightEvent.CancelRequested(t0 + 1000))
+        assertEquals(SyncStatus.DONE, r.pass().status)
+        assertTrue(r.rec.snapshot.archiveComplete)
+        assertTrue(r.backend.archived.isEmpty())
+        assertEquals(0L, r.backend.archiveRequests.last().getValue("session").jsonObject.getValue("finalSampleCount").jsonPrimitive.long)
+    }
+
+    @Test
+    fun `incomplete final receipt keeps outbox and refuses completion`() = runTest {
+        val r = Rig()
+        r.backend.archiveEnabled = true
+        r.rec.record(FlightEvent.Planned(t0, TestData.plan(t0, flightId = r.journal.flightId, startInMs = 0)))
+        r.pass()
+        r.fly(3)
+        r.clock.advance(60_000) // The declaration lead/skew guard must have passed.
+        r.rec.record(FlightEvent.FinishRequested(r.clock.now))
+        r.backend.incompleteArchiveReceipt = true
+        assertEquals(SyncStatus.BLOCKED, r.pass().status)
+        assertTrue(!r.rec.snapshot.archiveComplete)
+        assertTrue(r.journal.archivePending != null)
+        r.backend.incompleteArchiveReceipt = false
+        assertEquals(SyncStatus.DONE, r.pass().status)
+        assertTrue(r.rec.snapshot.archiveComplete)
+    }
+
+    @Test
+    fun `archive preserves the altitude reference available at sample time`() = runTest {
+        val r = Rig()
+        r.backend.archiveEnabled = true
+        r.rec.record(FlightEvent.Planned(t0, TestData.plan(t0, flightId = r.journal.flightId, startInMs = 0)))
+        r.pass()
+        r.fly(10)
+        val original = r.rec.snapshot.altitudeReference!!
+        r.clock.advance(60_000)
+        val later = original.copy(ellipsoidM = original.ellipsoidM + 100)
+        r.rec.record(FlightEvent.TakeoffReferenceResolved(r.clock.now, org.openutm.djiflight.core.altitude.TakeoffReference(later, listOf(later))))
+        r.rec.record(FlightEvent.FinishRequested(r.clock.now))
+        assertEquals(SyncStatus.DONE, r.pass().status)
+        for (sample in r.backend.archived.values) {
+            assertEquals(original.ellipsoidM + 30, sample.jsonObject.getValue("position").jsonObject.getValue("altitudeWGS84").jsonPrimitive.double)
+        }
     }
 
     @Test

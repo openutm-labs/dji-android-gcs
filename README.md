@@ -34,6 +34,8 @@ For developers, follow [Build and test](#build-and-test) below. The simulator ca
 
 ## Documentation
 
+- [Shared Go/DJI archive API, operator recovery and architecture](docs/SESSION_ARCHIVE.md)
+
 - [Architecture and design decisions](docs/12-dji-app-design.md)
 - [DJI integration options](docs/11-dji-integration.md)
 - [DroneDeploy integration and pilot migration](docs/13-dronedeploy.md)
