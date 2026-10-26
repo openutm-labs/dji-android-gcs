@@ -87,6 +87,7 @@ class FlightsActivity : Activity() {
     /** What UTM has of the flight, in the pilot's words. */
     private fun status(f: FlightSnapshot): Pair<String, Pill.Tone> {
         val pending = graph.service.pendingSamples(f.flightId)
+        if (f.serverClosed && graph.service.requiresArchive() && !f.archiveComplete) return getString(R.string.flights_status_uploading) to Pill.Tone.WARN
         return when (f.phase) {
             Phase.CLOSED -> getString(R.string.flights_status_in_utm) to Pill.Tone.OK
             Phase.PLANNED -> getString(R.string.flights_status_not_declared) to Pill.Tone.WARN

@@ -47,6 +47,11 @@ interface UtmBackend {
     /** Freeze the destination for an entire sync pass, including retries within that pass. */
     fun snapshot(): UtmBackend = this
 
+    val supportsArchive: Boolean get() = false
+
+    suspend fun sendArchive(batch: kotlinx.serialization.json.JsonObject): BackendResult<ArchiveReceipt> =
+        BackendResult.Rejected(501, "Session archive API is not implemented")
+
     suspend fun declare(plan: DeclarationPlan): BackendResult<String>
 
     /** The id of an earlier declaration made with [clientRef], or null if there is none. */

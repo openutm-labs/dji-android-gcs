@@ -12,6 +12,8 @@ import org.openutm.djiflight.core.rid.FlightIdentity
  * transient failures, so recorded flights simply wait.
  */
 class SwitchableBackend(@Volatile var target: UtmBackend? = null) : UtmBackend {
+    override val supportsArchive: Boolean get() = target?.supportsArchive ?: false
+    override suspend fun sendArchive(batch: kotlinx.serialization.json.JsonObject) = target?.sendArchive(batch) ?: none()
     override val serverId: String? get() = target?.serverId
     override fun snapshot(): UtmBackend = target?.snapshot() ?: Unconfigured
 
